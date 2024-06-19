@@ -5,7 +5,7 @@
 
 ## License
 Copyright 2024 Yasmina Mahdy  
-Copyright 2024 Haya Shalaby  
+Copyright 2024 Arwa Abdelkarim
 Copyright 2024 Rana Taher  
 
 Licensed under the Apache License, Version 2.0 (the "License");
