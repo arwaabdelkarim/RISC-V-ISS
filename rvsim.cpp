@@ -16,7 +16,7 @@
 using namespace std;
 
 unsigned int pc;
-unsigned char memory[(16+64)*1024];
+unsigned char memory[(64+64)*1024];
 
 void emitError(char *s)
 {
@@ -33,6 +33,7 @@ void instDecExec(unsigned int instWord)
 	unsigned int rd, rs1, rs2, funct3, funct7, opcode;
 	unsigned int I_imm, S_imm, B_imm, U_imm, J_imm;
 	unsigned int address;
+	unsigned int temp;
 
 	unsigned int instPC = pc - 4;
 
@@ -44,6 +45,10 @@ void instDecExec(unsigned int instWord)
 
 	// — inst[31] — inst[30:25] inst[24:21] inst[20]
 	I_imm = ((instWord >> 20) & 0x7FF) | (((instWord >> 31) ? 0xFFFFF800 : 0x0));
+
+	// - inst[31] - inst[30:25] - inst[11:7]
+	temp = (((instWord >> 7) & 0x0000001F) | ((instword >> 25 & 0x0000003F) << 5));
+	S_imm = temp | (((instWord >> 31) ? 0xFFFFF800 : 0x0));;
 
 	printPrefix(instPC, instWord);
 
@@ -59,14 +64,45 @@ void instDecExec(unsigned int instWord)
 			default:
 							cout << "\tUnkown R Instruction \n";
 		}
-	} else if(opcode == 0x13){	// I instructions
-		switch(funct3){
-			case 0:	cout << "\tADDI\tx" << rd << ", x" << rs1 << ", " << hex << "0x" << (int)I_imm << "\n";
-					break;
-			default:
-					cout << "\tUnkown I Instruction \n";
+	} 
+	else if (opcode == 0x13) {	// I instructions
+		switch (funct3) {
+		case 0:	cout << "\tADDI\tx" << rd << ", x" << rs1 << ", " << hex << "0x" << (int)I_imm << "\n";
+			break;
+		default:
+			cout << "\tUnkown I Instruction \n";
 		}
-	} else {
+	}
+	else if (opcode == 0x03) { // I - Load Instructions
+		switch (funct3) {
+		case 0: cout << "\tLB\tx" << rd << ", " << (int)I_imm << "(x" << rs1 << "0\n"; // LB x2, 3(x5)
+			break;
+		case 1:	cout << "\tLH\tx" << rd << ", " << (int)I_imm << "(x" << rs1 << "0\n"; // LH x2, 3(x5)
+			break;
+		case 2:	cout << "\tLW\tx" << rd << ", " << (int)I_imm << "(x" << rs1 << "0\n"; // LW x2, 3(x5)
+			break;
+		case 4:	cout << "\tLBU\tx" << rd << ", " << (int)I_imm << "(x" << rs1 << "0\n"; // LBU x2, 3(x5)
+			break;
+		case 5:	cout << "\tLHU\tx" << rd << ", " << (int)I_imm << "(x" << rs1 << "0\n"; // LHU x2, 3(x5)
+			break;
+		default: 
+			cout<< "\tUnkown I-Load Instruction \n";
+
+		}
+	}
+	else if (opcode == 0x23) {	// S Instructions
+		switch (funct3) {
+		case 0:	cout << "\tSB\tx" << rs2 << ", " << (int)S_imm << "(x" << rs1 << "0\n"; // SB x2, 3(x5)
+			break;
+		case 1:	cout << "\tSH\tx" << rs2 << ", " << (int)S_imm << "(x" << rs1 << "0\n"; // SH x2, 3(x5)
+			break;
+		case 2: cout << "\tSW\tx" << rs2 << ", " << (int)S_imm << "(x" << rs1 << "0\n"; // SW x2, 3(x5)
+			break;
+		default:
+			cout << "\tUnkown S Instruction \n";
+		}
+	}
+	else {
 		cout << "\tUnkown Instruction \n";
 	}
 
