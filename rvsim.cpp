@@ -19,6 +19,10 @@ using namespace std;
 unsigned int pc;
 unsigned char memory[(64+64)*1024];
 int reg[32];
+string name[32] = { "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
+					"s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7",
+					"s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11",
+					"t3", "t4", "t5", "t6" };
 
 void emitError(char *s)
 {
@@ -29,6 +33,20 @@ void emitError(char *s)
 void printPrefix(unsigned int instA, unsigned int instW){
 	cout << "0x" << hex << std::setfill('0') << std::setw(8) << instA << "\t0x" << std::setw(8) << instW;
 }
+
+int mem_to_reg(int ad, int i) { // i = n-1;
+	int x = 0;
+
+	while (i > 0) {
+		x |= memory[ad + i];
+		x <<= 8; // need '=' for that!
+		i--;
+	}
+	x |= memory[ad];
+
+	return x;
+}
+
 
 void instDecExec(unsigned int instWord)
 {
@@ -49,8 +67,21 @@ void instDecExec(unsigned int instWord)
 	I_imm = ((instWord >> 20) & 0x7FF) | (((instWord >> 31) ? 0xFFFFF800 : 0x0));
 
 	// - inst[31] - inst[30:25] - inst[11:7]
-	temp = (((instWord >> 7) & 0x0000001F) | ((instWord >> 25 & 0x0000003F) << 5));
-	S_imm = temp | (((instWord >> 31) ? 0xFFFFF800 : 0x0));
+	//temp = (((instWord >> 7) & 0x0000001F) | ((instWord >> 25 & 0x0000003F) << 5));
+	//S_imm = temp | (((instWord >> 31) ? 0xFFFFF800 : 0x0));
+
+	S_imm = (((instWord >> 7) & 0x0000001F) |
+			((instWord >> 20 & 0x00000FE0))) |
+			((instWord >> 31) ? 0xFFFFF800 : 0x0);
+	
+
+	B_imm = ((instWord >> 7) & 0x1); 
+	B_imm <<= 10;
+	B_imm |= (((instWord >> 8) & 0x00F) | 
+		((instWord >> 21) & 0x3F0) |
+		((instWord >> 20) & 0x800));
+	B_imm |= ((instWord >> 31) ? 0xFFFFF800 : 0x0);
+	B_imm  <<=  1;
 
 	printPrefix(instPC, instWord);
 
@@ -76,29 +107,44 @@ void instDecExec(unsigned int instWord)
 		}
 	}
 	else if (opcode == 0x03) { // I - Load Instructions
+		int ad = reg[rs1] + (int)I_imm; //stores the address of the LS byte we need
 		switch (funct3) {
-		case 0: cout << "\tLB\tx" << dec << rd << ", " << (int)I_imm << "(x" << rs1 << ")\n"; 
+		case 0: cout << "\tLB\t" <<  name[rd] << ", " << dec << (int)I_imm << "(" << name[rs1] << ")\n";
+			temp = memory[ad];
+			reg[rd] = memory[ad] | ((temp >> 7) ? 0xFFFFFF00 : 0x0;
 			break;
-		case 1:	cout << "\tLH\tx" << dec << rd << ", " << (int)I_imm << "(x" << rs1 << ")\n"; 
+		case 1:	cout << "\tLH\tx" << name[rd] << ", " << dec << (int)I_imm << "(" << name[rs1] << ")\n";
+			temp = mem_to_reg(ad, 1);
+			reg[rd] = temp | ((temp >> 15)? (0xFFFF0000): 0x0);
 			break;
-		case 2:	cout << "\tLW\tx" << dec << rd << ", " << (int)I_imm << "(x" << rs1 << ")\n"; 
+		case 2:	cout << "\tLW\tx" << name[rd] << ", " << dec << (int)I_imm << "(" << name[rs1] << ")\n";
+			reg[rd] = mem_to_reg(ad, 3);
 			break;
-		case 4:	cout << "\tLBU\tx" << dec << rd << ", " << (int)I_imm << "(x" << rs1 << ")\n"; 
+		case 4:	cout << "\tLBU\tx" << name[rd] << ", " << dec << (int)I_imm << "(" << name[rs1] << ")\n";
+			reg[rd] = memory[ad]; // automatically zero extended because memory is unsigned char
 			break;
-		case 5:	cout << "\tLHU\tx" << dec << rd << ", " << (int)I_imm << "(x" << rs1 << ")\n"; 
+		case 5:	cout << "\tLHU\tx" << name[rd] << ", " << dec << (int)I_imm << "(" << name[rs1] << ")\n";
+			reg[rd] = mem_to_reg(ad, 1);
 			break;
 		default: 
 			cout<< "\tUnkown I-Load Instruction \n";
-
 		}
 	}
 	else if (opcode == 0x23) {	// S Instructions
+		int ad = reg[rs1] + (int)S_imm; //stores the address of the LS byte we need
 		switch (funct3) {
-		case 0:	cout << "\tSB\tx" << dec << rs2 << ", " << (int)S_imm << "(x" << rs1 << ")\n"; 
+		case 0:	cout << "\tSB\tx" <<name[rs2] << ", " << dec << (int)S_imm << "(" << name[rs1] << ")\n";
+			memory[ad] = reg[rs2]; // the memory address gets the LS byte in reg[rs2]
 			break;
-		case 1:	cout << "\tSH\tx" << dec << rs2 << ", " << (int)S_imm << "(x" << rs1 << ")\n"; 
+		case 1:	cout << "\tSH\tx" << name[rs2] << ", " << dec << (int)S_imm << "(" << name[rs1] << ")\n";
+			memory[ad] = reg[rs2];
+			memory[ad + 1] = reg[rs2] >> 8;
 			break;
-		case 2: cout << "\tSW\tx" << dec << rs2 << ", " << (int)S_imm << "(x" << rs1 << ")\n"; 
+		case 2: cout << "\tSW\tx" << name [rs2] << ", " << dec << (int)S_imm << "(" << name[rs1] << ")\n";
+			memory[ad] = reg[rs2];
+			memory[ad + 1] = reg[rs2] >> 8;
+			memory[ad + 2] = reg[rs2] >> 16;
+			memory[ad + 3] = reg[rs2] >> 24;
 			break;
 		default:
 			cout << "\tUnkown S Instruction \n";
@@ -106,9 +152,9 @@ void instDecExec(unsigned int instWord)
 	}
 	else if (opcode == 0x63) {
 		switch (funct3) {
-		case 6: cout << "\tBLTU\tx" << dec << rs1 << ", " << rs2 << " address\n";
+		case 6: cout << "\tBLTU\tx" << name[rs1] << ", " << name[rs2] << " address\n";
 			break;
-		case 7: cout << "\tBGEU\tx" << dec << rs1 << ", " << rs2 << " address\n";
+		case 7: cout << "\tBGEU\tx" << name[rs1] << ", " << name[rs2] << " address\n";
 			break;
 		default:
 			cout << "\tUnkown B Instruction \n";
@@ -128,6 +174,7 @@ void instDecExec(unsigned int instWord)
 
 			cout << x << '\n';
 		}
+
 		else if (reg[17] == 4) {
 			char c = memory[reg[10]; // c = char at the address stored in a0
 			string output = "";
