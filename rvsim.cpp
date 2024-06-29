@@ -68,7 +68,7 @@ void instDecExec(unsigned int instWord)
 	J_temp = (instWord >> 20) & 0x000003FF; 
 	J_temp = J_temp << 1;
 	J_imm = J_imm | J_temp ;
-	J_temp = (instWord >> 19) & 0x00000001;
+	J_temp = (instWord >> 19) & 0x00000001; 
 	J_temp = J_temp << 11;
 	J_imm = J_imm | J_temp;
 	J_temp = (instWord >> 12) & 0x000000FF;
