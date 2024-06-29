@@ -1,0 +1,31 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+strategy:
+  matrix:
+    os: [macos-latest, windows-latest]
+    version: [12, 14, 16]
+    environment: [staging, production]
+    exclude:
+      - os: macos-latest
+        version: 12
+        environment: production
+      - os: windows-latest
+        version: 16
+jobs:
+runs-on: ${{ matrix.os }}
+           
+  steps:
+  - uses: actions/checkout@v4
+  - name: configure
+   run: ./configure
+   - name: make
+  run: make
+  - name: make check
+  run: make check
+  - name: make distcheck
+  run: make distcheck 
