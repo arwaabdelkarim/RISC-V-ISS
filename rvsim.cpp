@@ -2,13 +2,13 @@
 #include <fstream>
 #include "stdlib.h"
 #include <iomanip>
-#include <cstdint>
-
 using namespace std;
 
-unsigned reg[32] = {0};
-unsigned int pc;
-unsigned char memory[(16+64)*1024] = {0}; 
+string name[32] = {"zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2", "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"}; 
+int reg[32];
+unsigned int pc = 0;
+unsigned char memory[(64+64)*1024]; 
+
 
 void emitError(char *s)
 {
@@ -26,11 +26,12 @@ void instDecExec(unsigned int instWord)
 	unsigned int rd, rs1, rs2, funct3, funct7, opcode;
 	unsigned int I_imm, S_imm, B_imm, U_imm, J_imm;
 	unsigned int address;
-
 	unsigned int instPC = pc - 4;
-
-	// initializing I immediate
+	
+	// initializing immediates
 	I_imm = 0;
+	B_imm = 0;
+	U_imm = 0;
 
 	opcode = instWord & 0x0000007F;
 	rd = (instWord >> 7) & 0x0000001F;
@@ -41,26 +42,24 @@ void instDecExec(unsigned int instWord)
 
 	// Extraction of I immediate
 	I_imm = ((instWord >> 20) & 0x7FF) | (((instWord >> 31) ? 0xFFFFF800 : 0x0));
+	
+	//Extraction of B immediate 
+	B_imm = ((instWord >> 7) & 0x1); 
+    B_imm = (B_imm << 10);
+	B_imm = (B_imm | ((instWord >> 8) & 0x00F) | 
+		    ((instWord >> 21) & 0x3F0) |
+		    ((instWord >> 20) & 0x800));
+	B_imm = B_imm | ((instWord >> 31) ? 0xFFFFF800 : 0x0);
+	B_imm = B_imm << 1;
+
+	//Extraction of U immediate 
+	U_imm = ((instWord >> 12) & 0xFFFFF) | (((instWord >> 31) ? 0xFFF00000 : 0x0));
 
 	printPrefix(instPC, instWord);
-
+ 
 	if(opcode == 0x33)  // R instructions
 	{		
-		switch(funct3)
-		{
-			case 0: 
-				if(funct7 == 32)
-				{
-					cout << "\tSUB\tx" << rd << ", x" << rs1 << ", x" << rs2 << "\n";
-				}
-				else 
-				{
-					cout << "\tADD\tx" << rd << ", x" << rs1 << ", x" << rs2 << "\n";
-				}
-			    break;
-			default:
-				cout << "\tUnkown R Instruction \n";
-		}
+		
 	} 
 	else if(opcode == 0x13)  // I instructions
 	{	
@@ -68,13 +67,15 @@ void instDecExec(unsigned int instWord)
 		{
 			case 0:	
 			{
-				cout << "\tADDI\tx" << rd << ", x" << rs1 << ", " << hex << "0x" << (int)I_imm << "\n";
+				//tested
+				cout << "\tADDI\t" << name[rd] << ", " << name[rs1] << ", " << dec << (int)I_imm << "\n";
 				reg[rd] = reg[rs1] + I_imm;
 				break;
 			}
 			case 1:
 			{
-				cout << "\tSLLI\tx" << rd << ", x" << rs1 << ", " << hex << "0x" << (int)I_imm << "\n";
+				//tested
+				cout << "\tSLLI\t" << name[rd] << ", " << name[rs1] << ", " << dec << (int)I_imm << "\n";
 				I_imm = I_imm & 0x1F;
 				reg[rd] = reg[rs1] << I_imm;
 				break;
@@ -82,19 +83,21 @@ void instDecExec(unsigned int instWord)
 			}
 			case 2:
 			{ 
-				cout << "\tSLTI\tx" << rd << ", x" << rs1 << ", " << hex << "0x" << (int)I_imm << "\n";
-				reg[rd] = reg[rs1] < I_imm;
+				// not tested yet
+				cout << "\tSLTI\t" << name[rd] << ", " << name[rs1] << ", " << dec << (int)I_imm << "\n";
+				reg[rd] = (reg[rs1] < I_imm) ? 1 : 0;
 				break;
 			}
 			case 3:
 			{
-				cout << "\tSLTIU\tx" << rd << ", x" << rs1 << ", " << hex << "0x" << (int)I_imm << "\n";
-				reg[rd] = (static_cast<uint32_t>(reg[rs1]) < static_cast<uint32_t>(I_imm)) ? 1 : 0;
+				// not tested yet
+				cout << "\tSLTIU\tx" << name[rd] << ", " << name[rs1] << ", " << dec << (int)I_imm << "\n";
+				reg[rd] = ((unsigned int)reg[rs1] < I_imm) ? 1 : 0;
                 break;
 			}
 			case 4:
-			{
-				cout << "\tXORI\tx" << rd << ", x" << rs1 << ", " << hex << "0x" << (int)I_imm << "\n";
+			{	//tested
+				cout << "\tXORI\tx" << name[rd] << ", " << name[rs1] << ", " << dec << (int)I_imm << "\n";
 				reg[rd] = reg[rs1] ^ I_imm;
 				break;
 			}
@@ -102,27 +105,28 @@ void instDecExec(unsigned int instWord)
 			{
 				if (funct7 == 0x20)
 				{
-					cout << "\tSRAI\tx" << rd << ", x" << rs1 << ", " << hex << "0x" << (int)I_imm << "\n";
 					I_imm = I_imm & 0x1F;
+					cout << "\tSRAI\t" << name[rd] << ", " << name[rs1] << ", " << dec << (int)I_imm << "\n";
 					reg[rd] = reg[rs1] >> I_imm;
-				}
+					// cout << dec << reg[rd] << "\n"; for debugging
+				} 
 				else
 				{
-					cout << "\tSRLI\tx" << rd << ", x" << rs1 << ", " << hex << "0x" << (int)I_imm << "\n";
 					I_imm = I_imm & 0x1F;
-					reg[rd] = reg[rs1] >> I_imm;
-				}
+					cout << "\tSRLI\t" << name[rd] << ", " << name[rs1] << ", " << dec << (int)I_imm << "\n";
+					reg[rd] = (unsigned int)reg[rs1] >> I_imm;
+				} 
 				break;
 			}
 			case 6:
 			{
-				cout << "\tORI\tx" << rd << ", x" << rs1 << ", " << hex << "0x" << (int)I_imm << "\n";
+				cout << "\tORI\t" << name[rd] << ", " << name[rs1] << ", " << dec << (int)I_imm << "\n";
 				reg[rd] = reg[rs1] | I_imm;
 				break;
 			}
 			case 7:
 			{
-				cout << "\tANDI\tx" << rd << ", x" << rs1 << ", " << hex << "0x" << (int)I_imm << "\n";
+				cout << "\tANDI\t" << name[rd] << ", " << name[rs1] << ", " << dec << (int)I_imm << "\n";
 				reg[rd] = reg[rs1] & I_imm;
 				break;
 			}
@@ -130,7 +134,54 @@ void instDecExec(unsigned int instWord)
 				cout << "\tUnkown I Instruction \n";
 		}
 	} 
-	else
+	else if(opcode == 0x63)  // B instructions
+	{	
+		switch(funct3)
+		{
+			case 0:	
+			{
+				break;
+			}
+			case 1:
+			{
+				break;
+				
+			}
+			case 4:
+			{ 
+				cout << "\tBLT\t" << name[rs1] << ", " << name[rs2] << ", " << hex << "0x" << instPC + (int)B_imm << "\n";
+				if (reg[rs1] < reg[rs2])
+					pc = instPC + (int)B_imm;
+				break;
+			}
+			case 5:
+			{
+				cout << "\tBGE\t" << name[rs1] << ", " << name[rs2] << ", " <<  hex << "0x" << instPC + (int)B_imm << "\n";
+                if (reg[rs1] >= reg[rs2])
+					pc = instPC + (int)B_imm;
+				break;
+			}
+			case 6:
+			{
+				break;
+			}
+			case 7:
+			{
+				break;
+			}
+			default:
+				cout << "\tUnkown B Instruction \n";
+		}
+	}
+	else if (opcode == 0x37) //not done yet
+	{
+		
+	}
+	else if (opcode == 0x17) //not done yet 
+	{
+		
+	}
+	else 
 	{
 		cout << "\tUnkown Instruction \n";
 	}
@@ -163,8 +214,13 @@ int main(int argc, char *argv[])
 						(((unsigned char)memory[pc+3])<<24);
 			pc += 4;
 			// remove the following line once you have a complete simulator
-			if(pc==32) break;			// stop when PC reached address 32
+			//if(pc==32) break;			// stop when PC reached address 32
 			instDecExec(instWord);
+			if (instWord == 0)
+            {
+				break;
+            }
 		}
 	} else emitError("Cannot access input file\n");
 }
+
