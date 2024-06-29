@@ -52,6 +52,7 @@ void instDecExec(unsigned int instWord)
 	printPrefix(instPC, instWord);
 
 	opcode = instWord & 0x0000007F;
+	rd = (instWord >> 7) & 0x0000001F;
 	I_imm = (instWord >> 20) & 0x00000FFF;
 	funct3 = (instWord >> 12) & 0x00000007;
 	rs1 = (instWord >> 15) & 0x0000001F;
@@ -176,7 +177,6 @@ void instDecExec(unsigned int instWord)
 	}
 	else if(opcode == 0x67)
 	{
-
 		cout << "\tJALR\t" <<reg[rd].name <<","<< reg[rs1].name <<","<< hex << "0x" << reg[rs1].value + (int)I_imm <<"\n";
 		reg[rd].value = pc;
 		pc = reg[rs1].value + (int)I_imm;
