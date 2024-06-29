@@ -47,16 +47,17 @@ void instDecExec(unsigned int instWord)
 	B_imm=0x0;
 	J_imm=0x0;
 	// — inst[31] — inst[30:25] inst[24:21] inst[20]
-	I_imm = ((instWord >> 20) & 0x7FF) | (((instWord >> 31) ? 0xFFFFF800 : 0x0));
+	
 
 	printPrefix(instPC, instWord);
 
 	opcode = instWord & 0x0000007F;
 	rd = (instWord >> 7) & 0x0000001F;
-	I_imm = (instWord >> 20) & 0x00000FFF;
 	funct3 = (instWord >> 12) & 0x00000007;
 	rs1 = (instWord >> 15) & 0x0000001F;
 	rs2 = (instWord >> 20) & 0x0000001F;
+
+	I_imm = ((instWord >> 20) & 0x7FF) | (((instWord >> 31) ? 0xFFFFF800 : 0x0));
 
 	B_imm = ((instWord >> 7) & 0x1); 
     B_imm = (B_imm << 10);
@@ -78,6 +79,8 @@ void instDecExec(unsigned int instWord)
 	J_temp = (instWord >> 31) & 0x00000001;
 	J_temp = J_temp << 20;
 	J_imm = J_imm | J_temp;
+
+	J_imm |= (((instWord >> 31) ? 0xFFF00000 : 0x0));
 
 	// R Instructions
 	if(opcode == 0x33){	
