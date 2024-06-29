@@ -1,6 +1,6 @@
 # RISC-V-ISS
 ## Collaborators
-* [Yasmina Mahdy](https://github.com/Yasmina-Reda)
+* [Yasmina Mahdy](https://github.com/Yasmina-Mahdy)
 * [Rana Taher](https://github.com/rana5679)
 
 ## License

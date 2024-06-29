@@ -17,7 +17,7 @@
 using namespace std;
 
 unsigned int pc;
-unsigned char memory[(64+64)*1024];
+unsigned char memory[(16+64)*1024];
 
 struct registers
 {
@@ -63,7 +63,6 @@ void instDecExec(unsigned int instWord)
 	unsigned int rd, rs1, rs2, funct3, funct7, opcode;
 	unsigned int I_imm, S_imm, B_imm, U_imm, J_imm;
 	unsigned int address;
-	unsigned int temp;
 
 	unsigned int instPC = pc - 4;
 
@@ -75,6 +74,7 @@ void instDecExec(unsigned int instWord)
 
 	// — inst[31] — inst[30:25] inst[24:21] inst[20]
 	I_imm = ((instWord >> 20) & 0x7FF) | (((instWord >> 31) ? 0xFFFFF800 : 0x0));
+
 
 	// - inst[31] - inst[30:25] - inst[11:7]
 	//temp = (((instWord >> 7) & 0x0000001F) | ((instWord >> 25 & 0x0000003F) << 5));
@@ -107,6 +107,7 @@ void instDecExec(unsigned int instWord)
 			default:
 							cout << "\tUnkown R Instruction \n";
 		}
+
 	} 
 	else if (opcode == 0x13) {	// I instructions
 		switch (funct3) {
@@ -192,6 +193,9 @@ void instDecExec(unsigned int instWord)
 		}
 	}
 	else {
+
+	} else {
+
 		cout << "\tUnkown Instruction \n";
 	}
 
