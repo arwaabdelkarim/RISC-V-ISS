@@ -4,8 +4,16 @@
 #include <iomanip>
 using namespace std;
 
-string name[32] = {"zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2", "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"}; 
-int reg[32];
+struct registers
+{
+	string name;
+	int value;
+};
+
+registers reg[32]={{"zero",0},{"ra",0},{"sp",4194304},{"gp",0},{"tp",0},{"t0",0},{"t1",0},{"t2",0},{"s0",0},{"s1",0},{"a0",0},{"a1",0},
+				   {"a2",0},{"a3",0},{"a4",0},{"a5",0},{"a6",0},{"a7",0},{"s2",0},{"s3",0},{"s4",0},{"s5",0},{"s6",0},{"s7",0},{"s8",0},
+				   {"s9",0},{"s10",0},{"s11",0},{"t3",0},{"t4",0},{"t5",0},{"t6",0}};
+
 unsigned int pc = 0;
 unsigned char memory[(64+64)*1024]; 
 
@@ -67,38 +75,35 @@ void instDecExec(unsigned int instWord)
 		{
 			case 0:	
 			{
-				//tested
-				cout << "\tADDI\t" << name[rd] << ", " << name[rs1] << ", " << dec << (int)I_imm << "\n";
-				reg[rd] = reg[rs1] + I_imm;
+				cout << "\tADDI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+				reg[rd].value = reg[rs1].value + I_imm;
 				break;
 			}
 			case 1:
 			{
-				//tested
-				cout << "\tSLLI\t" << name[rd] << ", " << name[rs1] << ", " << dec << (int)I_imm << "\n";
+				cout << "\tSLLI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
 				I_imm = I_imm & 0x1F;
-				reg[rd] = reg[rs1] << I_imm;
+				reg[rd].value = reg[rs1].value << I_imm;
 				break;
-				
 			}
 			case 2:
 			{ 
 				// not tested yet
-				cout << "\tSLTI\t" << name[rd] << ", " << name[rs1] << ", " << dec << (int)I_imm << "\n";
-				reg[rd] = (reg[rs1] < I_imm) ? 1 : 0;
+				cout << "\tSLTI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+				reg[rd].value = (reg[rs1].value < I_imm) ? 1 : 0;
 				break;
 			}
 			case 3:
 			{
 				// not tested yet
-				cout << "\tSLTIU\tx" << name[rd] << ", " << name[rs1] << ", " << dec << (int)I_imm << "\n";
-				reg[rd] = ((unsigned int)reg[rs1] < I_imm) ? 1 : 0;
+				cout << "\tSLTIU\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+				reg[rd].value = ((unsigned int)reg[rs1].value < I_imm) ? 1 : 0;
                 break;
 			}
 			case 4:
-			{	//tested
-				cout << "\tXORI\tx" << name[rd] << ", " << name[rs1] << ", " << dec << (int)I_imm << "\n";
-				reg[rd] = reg[rs1] ^ I_imm;
+			{	
+				cout << "\tXORI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+				reg[rd].value = reg[rs1].value ^ I_imm;
 				break;
 			}
 			case 5:
@@ -106,28 +111,28 @@ void instDecExec(unsigned int instWord)
 				if (funct7 == 0x20)
 				{
 					I_imm = I_imm & 0x1F;
-					cout << "\tSRAI\t" << name[rd] << ", " << name[rs1] << ", " << dec << (int)I_imm << "\n";
-					reg[rd] = reg[rs1] >> I_imm;
+					cout << "\tSRAI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+					reg[rd].value = reg[rs1].value >> I_imm;
 					// cout << dec << reg[rd] << "\n"; for debugging
 				} 
 				else
 				{
 					I_imm = I_imm & 0x1F;
-					cout << "\tSRLI\t" << name[rd] << ", " << name[rs1] << ", " << dec << (int)I_imm << "\n";
-					reg[rd] = (unsigned int)reg[rs1] >> I_imm;
+					cout << "\tSRLI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+					reg[rd].value = (unsigned int)reg[rs1].value >> I_imm;
 				} 
 				break;
 			}
 			case 6:
 			{
-				cout << "\tORI\t" << name[rd] << ", " << name[rs1] << ", " << dec << (int)I_imm << "\n";
-				reg[rd] = reg[rs1] | I_imm;
+				cout << "\tORI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+				reg[rd].value = reg[rs1].value | I_imm;
 				break;
 			}
 			case 7:
 			{
-				cout << "\tANDI\t" << name[rd] << ", " << name[rs1] << ", " << dec << (int)I_imm << "\n";
-				reg[rd] = reg[rs1] & I_imm;
+				cout << "\tANDI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+				reg[rd].value = reg[rs1].value & I_imm;
 				break;
 			}
 			default:
@@ -149,15 +154,15 @@ void instDecExec(unsigned int instWord)
 			}
 			case 4:
 			{ 
-				cout << "\tBLT\t" << name[rs1] << ", " << name[rs2] << ", " << hex << "0x" << instPC + (int)B_imm << "\n";
-				if (reg[rs1] < reg[rs2])
+				cout << "\tBLT\t" << reg[rs1].name << ", " << reg[rs2].name << ", " << hex << "0x" << instPC + (int)B_imm << "\n";
+				if (reg[rs1].value < reg[rs2].value)
 					pc = instPC + (int)B_imm;
 				break;
 			}
 			case 5:
 			{
-				cout << "\tBGE\t" << name[rs1] << ", " << name[rs2] << ", " <<  hex << "0x" << instPC + (int)B_imm << "\n";
-                if (reg[rs1] >= reg[rs2])
+				cout << "\tBGE\t" << reg[rs1].name << ", " << reg[rs2].name << ", " <<  hex << "0x" << instPC + (int)B_imm << "\n";
+                if (reg[rs1].value >= reg[rs2].value)
 					pc = instPC + (int)B_imm;
 				break;
 			}
@@ -175,11 +180,15 @@ void instDecExec(unsigned int instWord)
 	}
 	else if (opcode == 0x37) //not done yet
 	{
-		
+		cout << "\tLUI\t" << reg[rd].name << ", " << dec << ((int)U_imm << 12) << "\n"; //shifting 12 bits to the right to load to upper 20 bits in rd
+		reg[rd].value = (int)U_imm;
+		cout << reg[rd].value << endl;
 	}
 	else if (opcode == 0x17) //not done yet 
 	{
-		
+		cout << "\tAUIPC\t" << reg[rd].name << ", " << dec << ((int)U_imm << 12) << "\n";
+		reg[rd].value = instPC + (int)U_imm;
+		cout << reg[rd].value << endl;
 	}
 	else 
 	{
