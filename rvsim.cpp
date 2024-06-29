@@ -12,11 +12,13 @@
 #include <fstream>
 #include "stdlib.h"
 #include <iomanip>
+#include <string>
 
 using namespace std;
 
 unsigned int pc;
 unsigned char memory[(64+64)*1024];
+int reg[32];
 
 void emitError(char *s)
 {
@@ -47,8 +49,8 @@ void instDecExec(unsigned int instWord)
 	I_imm = ((instWord >> 20) & 0x7FF) | (((instWord >> 31) ? 0xFFFFF800 : 0x0));
 
 	// - inst[31] - inst[30:25] - inst[11:7]
-	temp = (((instWord >> 7) & 0x0000001F) | ((instword >> 25 & 0x0000003F) << 5));
-	S_imm = temp | (((instWord >> 31) ? 0xFFFFF800 : 0x0));;
+	temp = (((instWord >> 7) & 0x0000001F) | ((instWord >> 25 & 0x0000003F) << 5));
+	S_imm = temp | (((instWord >> 31) ? 0xFFFFF800 : 0x0));
 
 	printPrefix(instPC, instWord);
 
@@ -75,15 +77,15 @@ void instDecExec(unsigned int instWord)
 	}
 	else if (opcode == 0x03) { // I - Load Instructions
 		switch (funct3) {
-		case 0: cout << "\tLB\tx" << rd << ", " << (int)I_imm << "(x" << rs1 << "0\n"; // LB x2, 3(x5)
+		case 0: cout << "\tLB\tx" << dec << rd << ", " << (int)I_imm << "(x" << rs1 << ")\n"; 
 			break;
-		case 1:	cout << "\tLH\tx" << rd << ", " << (int)I_imm << "(x" << rs1 << "0\n"; // LH x2, 3(x5)
+		case 1:	cout << "\tLH\tx" << dec << rd << ", " << (int)I_imm << "(x" << rs1 << ")\n"; 
 			break;
-		case 2:	cout << "\tLW\tx" << rd << ", " << (int)I_imm << "(x" << rs1 << "0\n"; // LW x2, 3(x5)
+		case 2:	cout << "\tLW\tx" << dec << rd << ", " << (int)I_imm << "(x" << rs1 << ")\n"; 
 			break;
-		case 4:	cout << "\tLBU\tx" << rd << ", " << (int)I_imm << "(x" << rs1 << "0\n"; // LBU x2, 3(x5)
+		case 4:	cout << "\tLBU\tx" << dec << rd << ", " << (int)I_imm << "(x" << rs1 << ")\n"; 
 			break;
-		case 5:	cout << "\tLHU\tx" << rd << ", " << (int)I_imm << "(x" << rs1 << "0\n"; // LHU x2, 3(x5)
+		case 5:	cout << "\tLHU\tx" << dec << rd << ", " << (int)I_imm << "(x" << rs1 << ")\n"; 
 			break;
 		default: 
 			cout<< "\tUnkown I-Load Instruction \n";
@@ -92,14 +94,50 @@ void instDecExec(unsigned int instWord)
 	}
 	else if (opcode == 0x23) {	// S Instructions
 		switch (funct3) {
-		case 0:	cout << "\tSB\tx" << rs2 << ", " << (int)S_imm << "(x" << rs1 << "0\n"; // SB x2, 3(x5)
+		case 0:	cout << "\tSB\tx" << dec << rs2 << ", " << (int)S_imm << "(x" << rs1 << ")\n"; 
 			break;
-		case 1:	cout << "\tSH\tx" << rs2 << ", " << (int)S_imm << "(x" << rs1 << "0\n"; // SH x2, 3(x5)
+		case 1:	cout << "\tSH\tx" << dec << rs2 << ", " << (int)S_imm << "(x" << rs1 << ")\n"; 
 			break;
-		case 2: cout << "\tSW\tx" << rs2 << ", " << (int)S_imm << "(x" << rs1 << "0\n"; // SW x2, 3(x5)
+		case 2: cout << "\tSW\tx" << dec << rs2 << ", " << (int)S_imm << "(x" << rs1 << ")\n"; 
 			break;
 		default:
 			cout << "\tUnkown S Instruction \n";
+		}
+	}
+	else if (opcode == 0x63) {
+		switch (funct3) {
+		case 6: cout << "\tBLTU\tx" << dec << rs1 << ", " << rs2 << " address\n";
+			break;
+		case 7: cout << "\tBGEU\tx" << dec << rs1 << ", " << rs2 << " address\n";
+			break;
+		default:
+			cout << "\tUnkown B Instruction \n";
+		}
+	}
+	else if (opcode == 73) {
+		if (reg[17] == 1) { // a7 = 1
+			int x = 0; // will hold our int
+			int i = 3; // offset to reach most significant byte (little endian)
+
+			while (i > 0) {
+				x |= memory[reg[10] + i]; // captures the i-th byte by 'or'ing
+				x <<= 8; // shift to allow place for next byte
+				i--;
+			}
+			x |= memory[reg[10]]; // add last byte without shifting
+
+			cout << x << '\n';
+		}
+		else if (reg[17] == 4) {
+			char c = memory[reg[10]; // c = char at the address stored in a0
+			string output = "";
+			while (c != 0) { // as long as we havent reached a null
+				output += c;
+			}
+			cout << output;
+		}
+		else {
+			cout << "\tUnkown Ecall Instruction \n";
 		}
 	}
 	else {
