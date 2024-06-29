@@ -12,79 +12,182 @@
 #include <fstream>
 #include "stdlib.h"
 #include <iomanip>
+#include <string>
 
 using namespace std;
 
+struct info
+{
+	string name;
+	int value;
+};
+
 unsigned int pc;
-unsigned char memory[(16+64)*1024];
+unsigned char memory[(64+64)*1024];
+info reg[32]={{"zero",0},{"ra",0},{"sp",4194304},{"gp",0},{"tp",0},{"t0",0},{"t1",0},{"t2",0},{"s0",0},{"s1",0},{"a0",0},{"a1",0},{"a2",0},{"a3",0},{"a4",0},{"a5",0},{"a6",0},{"a7",0},{"s2",0},{"s3",0},{"s4",0},{"s5",0},{"s6",0},{"s7",0},{"s8",0},{"s9",0},{"s10",0},{"s11",0},{"t3",0},{"t4",0},{"t5",0},{"t6",0}};
+
 
 void emitError(char *s)
-{
+{ 
 	cout << s;
 	exit(0);
 }
 
 void printPrefix(unsigned int instA, unsigned int instW){
-	cout << "0x" << hex << std::setfill('0') << std::setw(8) << instA << "\t0x" << std::setw(8) << instW;
+	cout << "0x" << hex << setfill('0') << setw(8) << instA << "\t0x" << setw(8) << instW;
 }
 
 void instDecExec(unsigned int instWord)
 {
 	unsigned int rd, rs1, rs2, funct3, funct7, opcode;
-	unsigned int I_imm, S_imm, B_imm, U_imm, J_imm;
+	unsigned int I_imm, S_imm, B_imm, U_imm, J_imm, J_temp;
 	unsigned int address;
 
 	unsigned int instPC = pc - 4;
-
-	opcode = instWord & 0x0000007F;
-	rd = (instWord >> 7) & 0x0000001F;
-	funct3 = (instWord >> 12) & 0x00000007;
-	rs1 = (instWord >> 15) & 0x0000001F;
-	rs2 = (instWord >> 20) & 0x0000001F;
-	funct7 = (instWord >> 25) & 0x0000007F;
-
+	B_imm=0x0;
+	J_imm=0x0;
 	// — inst[31] — inst[30:25] inst[24:21] inst[20]
 	I_imm = ((instWord >> 20) & 0x7FF) | (((instWord >> 31) ? 0xFFFFF800 : 0x0));
 
 	printPrefix(instPC, instWord);
 
-	if(opcode == 0x33){		// R Instructions
+	opcode = instWord & 0x0000007F;
+
+	// R Instructions
+	if(opcode == 0x33){	
+		rd = (instWord >> 7) & 0x0000001F;
+		funct3 = (instWord >> 12) & 0x00000007;
+		rs1 = (instWord >> 15) & 0x0000001F;
+		rs2 = (instWord >> 20) & 0x0000001F;
+		funct7 = (instWord >> 25) & 0x0000007F;	
 		switch(funct3){
 			case 0: if(funct7 == 32)
-					 cout << "\tSUB\tx" << rd << ", x" << rs1 << ", x" << rs2 << "\n";
+					{
+					   cout << "\tSUB\t" << reg[rd].name <<","<<reg[rs1].name <<","<< reg[rs2].name << "\n";
+					   reg[rd].value = reg[rs1].value - reg[rs2].value;
+					}
 					else 
-					 cout << "\tADD\tx" << rd << ", x" << rs1 << ", x" << rs2 << "\n";
+					{
+						cout << "\tADD\t" << reg[rd].name <<","<<reg[rs1].name <<","<< reg[rs2].name << "\n";
+						reg[rd].value = reg[rs1].value + reg[rs2].value;
+					}
 					break;
 
-			case 4:  cout << "\tXOR\tx" << rd << ", x" << rs1 << ", x" << rs2 << "\n";
+			case 4: {
+						cout << "\tXOR\t" << reg[rd].name <<","<<reg[rs1].name <<","<< reg[rs2].name << "\n";
+						reg[rd].value = reg[rs1].value ^ reg[rs2].value;
+			        } 
 			         break;
-			case 6:  cout << "\tOR\tx" << rd << ", x" << rs1 << ", x" << rs2 << "\n";
+			case 6:  {
+						cout << "\tOR\t" << reg[rd].name <<","<<reg[rs1].name <<","<< reg[rs2].name << "\n";
+						reg[rd].value = reg[rs1].value | reg[rs2].value;
+			         }	
 			         break;
-			case 7:  cout << "\tAND\tx" << rd << ", x" << rs1 << ", x" << rs2 << "\n";
+			case 7:  {
+						cout << "\tAND\t" << reg[rd].name <<","<<reg[rs1].name <<","<< reg[rs2].name << "\n";
+						reg[rd].value = reg[rs1].value & reg[rs2].value;
+					 }
 			         break;
-			case 1:  cout << "\tSLL\tx" << rd << ", x" << rs1 << ", x" << rs2 << "\n";
+			case 1: {
+						 cout << "\tSLL\t" << reg[rd].name <<","<<reg[rs1].name <<","<< reg[rs2].name << "\n";
+						 reg[rd].value = reg[rs1].value << reg[rs2].value;
+					}
                      break;
 			case 5: if(funct7 == 32)
-				     cout << "\tSRA\tx" << rd << ", x" << rs1 << ", x" << rs2 << "\n";
+					{
+						cout << "\tSRA\t" << reg[rd].name <<","<<reg[rs1].name <<","<< reg[rs2].name << "\n";
+						reg[rd].value = reg[rs1].value >> reg[rs2].value;
+					} 
                     else
-					 cout << "\tSRL\tx" << rd << ", x" << rs1 << ", x" << rs2 << "\n";
+					{
+						cout << "\tSRL\t" << reg[rd].name <<","<<reg[rs1].name <<","<< reg[rs2].name << "\n";
+						 reg[rd].value = (unsigned int)reg[rs1].value >> reg[rs2].value;
+					}
 					 break;
 
-			case 2:  cout << "\tSLT\tx" << rd << ", x" << rs1 << ", x" << rs2 << "\n";
+			case 2: {
+						 cout << "\tSLT\t" << reg[rd].name <<","<<reg[rs1].name <<","<< reg[rs2].name << "\n";
+						 reg[rd].value = (reg[rs1].value < reg[rs2].value) ? 1 : 0;
+					}	 
 				     break;
-			case 3:  cout << "\tSLTU\tx" << rd << ", x" << rs1 << ", x" << rs2 << "\n";	 
+			case 3:  {
+						 cout << "\tSLTU\t" << reg[rd].name <<","<<reg[rs1].name <<","<< reg[rs2].name << "\n";
+						 reg[rd].value = ((unsigned int)reg[rs1].value < (unsigned int)reg[rs2].value) ? 1 : 0;	 
+					 }
 			         break;
 			       				
 			default: cout << "\tUnkown R Instruction \n";
 		}
-	} else if(opcode == 0x13){	// I instructions
+
+	} 
+	else if(opcode == 0x13){	// I instructions
 		switch(funct3){
 			case 0:	cout << "\tADDI\tx" << rd << ", x" << rs1 << ", " << hex << "0x" << (int)I_imm << "\n";
 					break;
 			default:
 					cout << "\tUnkown I Instruction \n";
 		}
-	} else {
+	} 
+	else if (opcode == 0x63)
+	{
+		B_imm = ((instWord >> 7) & 0x1); 
+        B_imm = (B_imm << 10);
+	    B_imm = (B_imm | ((instWord >> 8) & 0x00F) | 
+		    ((instWord >> 21) & 0x3F0) |
+		    ((instWord >> 20) & 0x800));
+	    B_imm = B_imm | ((instWord >> 31) ? 0xFFFFF800 : 0x0);
+	    B_imm = B_imm << 1;
+		funct3 = (instWord >> 12) & 0x00000007;
+		rs1 = (instWord >> 15) & 0x0000001F;
+		rs2 = (instWord >> 20) & 0x0000001F;
+		switch(funct3){
+			case 0: {
+						cout << "\tBEQ\t" <<reg[rs1].name <<","<< reg[rs2].name << ","<< hex << "0x" << instPC+B_imm << "\n";
+						instPC = (reg[rs1].value == reg[rs2].value) ? instPC+B_imm : instPC; 
+					}
+					break;
+			case 1: {
+						cout << "\tBNE\t" <<reg[rs1].name <<","<< reg[rs2].name <<","<< hex << "0x" << instPC+B_imm <<"\n";
+						instPC = (reg[rs1].value != reg[rs2].value) ? instPC+B_imm : instPC; 
+					}
+					break;
+			default:
+						cout << "\tUnkown B Instruction \n";	
+		}
+
+	}
+	else if(opcode == 0x6F)
+	{
+		rd = (instWord >> 7) & 0x0000001F;
+		J_temp = (instWord >> 20) & 0x000003FF; 
+		J_temp = J_temp << 1;
+		J_imm = J_imm | J_temp ;
+		J_temp = (instWord >> 19) & 0x00000001;
+		J_temp = J_temp << 11;
+		J_imm = J_imm | J_temp;
+		J_temp = (instWord >> 12) & 0x000000FF;
+		J_temp = J_temp << 12;
+		J_imm = J_imm | J_temp;
+		J_temp = (instWord >> 31) & 0x00000001;
+		J_temp = J_temp << 20;
+		J_imm = J_imm | J_temp;
+
+		cout << "\tJAL\t" <<reg[rd].name <<","<< hex << "0x" << instPC+J_imm <<"\n";
+		reg[rd].value = pc;
+		instPC = instPC + J_imm;
+	}
+	else if(opcode == 0x67)
+	{
+		rd = (instWord >> 7) & 0x0000001F;
+		funct3 = (instWord >> 12) & 0x00000007;
+		rs1 = (instWord >> 15) & 0x0000001F;
+		I_imm = (instWord >> 20) & 0x00000FFF;
+
+		cout << "\tJALR\t" <<reg[rd].name <<","<< reg[rs1].name <<","<< hex << "0x" << reg[rs1].value + I_imm <<"\n";
+		reg[rd].value = pc;
+		instPC = reg[rs1].value + I_imm;
+	}
+	else {
 		cout << "\tUnkown Instruction \n";
 	}
 
@@ -95,6 +198,8 @@ int main(int argc, char *argv[]){
 	unsigned int instWord=0;
 	ifstream inFile;
 	ofstream outFile;
+	// for sp the initail value is (64*64*1024) 
+	info reg[32]={{"zero",0},{"ra",0},{"sp",4194304},{"gp",0},{"tp",0},{"t0",0},{"t1",0},{"t2",0},{"s0",0},{"s1",0},{"a0",0},{"a1",0},{"a2",0},{"a3",0},{"a4",0},{"a5",0},{"a6",0},{"a7",0},{"s2",0},{"s3",0},{"s4",0},{"s5",0},{"s6",0},{"s7",0},{"s8",0},{"s9",0},{"s10",0},{"s11",0},{"t3",0},{"t4",0},{"t5",0},{"t6",0}};
 
 	if(argc<1) emitError("use: rvcdiss <machine_code_file_name>\n");
 
