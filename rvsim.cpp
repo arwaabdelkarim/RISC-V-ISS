@@ -18,11 +18,20 @@ using namespace std;
 
 unsigned int pc;
 unsigned char memory[(64+64)*1024];
-int reg[32];
-string name[32] = { "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
-					"s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7",
-					"s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11",
-					"t3", "t4", "t5", "t6" };
+
+struct registers
+{
+	string name;
+	int value;
+};
+
+registers reg[32] = { {"zero",0},{"ra",0},{"sp",4194304},{"gp",0},{"tp",0},
+					{"t0",0},{"t1",0},{"t2",0},{"s0",0},{"s1",0},
+					{"a0",0},{"a1",0},{"a2",0},{"a3",0},{"a4",0},{"a5",0},{"a6",0},{"a7",0},
+					{"s2",0},{"s3",0},{"s4",0},{"s5",0},{"s6",0},{"s7",0},{"s8",0},{"s9",0},
+					{"s10",0},{"s11",0},{"t3",0},{"t4",0},{"t5",0},{"t6",0} };
+
+
 
 void emitError(char *s)
 {
@@ -81,7 +90,7 @@ void instDecExec(unsigned int instWord)
 		((instWord >> 21) & 0x3F0) |
 		((instWord >> 20) & 0x800));
 	B_imm |= ((instWord >> 31) ? 0xFFFFF800 : 0x0);
-	B_imm  <<=  1;
+	B_imm <<=  1;
 
 	printPrefix(instPC, instWord);
 
@@ -107,44 +116,44 @@ void instDecExec(unsigned int instWord)
 		}
 	}
 	else if (opcode == 0x03) { // I - Load Instructions
-		int ad = reg[rs1] + (int)I_imm; //stores the address of the LS byte we need
+		int ad = reg[rs1].value + (int)I_imm; //stores the address of the LS byte we need
 		switch (funct3) {
-		case 0: cout << "\tLB\t" <<  name[rd] << ", " << dec << (int)I_imm << "(" << name[rs1] << ")\n";
+		case 0: cout << "\tLB\t" <<  reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
 			temp = memory[ad];
-			reg[rd] = memory[ad] | ((temp >> 7) ? 0xFFFFFF00 : 0x0;
+			reg[rd].value = memory[ad] | ((temp >> 7) ? 0xFFFFFF00 : 0x0);
 			break;
-		case 1:	cout << "\tLH\tx" << name[rd] << ", " << dec << (int)I_imm << "(" << name[rs1] << ")\n";
+		case 1:	cout << "\tLH\tx" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
 			temp = mem_to_reg(ad, 1);
-			reg[rd] = temp | ((temp >> 15)? (0xFFFF0000): 0x0);
+			reg[rd].value = temp | ((temp >> 15)? (0xFFFF0000): 0x0);
 			break;
-		case 2:	cout << "\tLW\tx" << name[rd] << ", " << dec << (int)I_imm << "(" << name[rs1] << ")\n";
-			reg[rd] = mem_to_reg(ad, 3);
+		case 2:	cout << "\tLW\tx" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
+			reg[rd].value = mem_to_reg(ad, 3);
 			break;
-		case 4:	cout << "\tLBU\tx" << name[rd] << ", " << dec << (int)I_imm << "(" << name[rs1] << ")\n";
-			reg[rd] = memory[ad]; // automatically zero extended because memory is unsigned char
+		case 4:	cout << "\tLBU\tx" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
+			reg[rd].value = memory[ad]; // automatically zero extended because memory is unsigned char
 			break;
-		case 5:	cout << "\tLHU\tx" << name[rd] << ", " << dec << (int)I_imm << "(" << name[rs1] << ")\n";
-			reg[rd] = mem_to_reg(ad, 1);
+		case 5:	cout << "\tLHU\tx" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
+			reg[rd].value = mem_to_reg(ad, 1);
 			break;
 		default: 
 			cout<< "\tUnkown I-Load Instruction \n";
 		}
 	}
 	else if (opcode == 0x23) {	// S Instructions
-		int ad = reg[rs1] + (int)S_imm; //stores the address of the LS byte we need
+		int ad = reg[rs1].value + (int)S_imm; //stores the address of the LS byte we need
 		switch (funct3) {
-		case 0:	cout << "\tSB\tx" <<name[rs2] << ", " << dec << (int)S_imm << "(" << name[rs1] << ")\n";
-			memory[ad] = reg[rs2]; // the memory address gets the LS byte in reg[rs2]
+		case 0:	cout << "\tSB\tx" << reg[rs2].name << ", " << dec << (int)S_imm << "(" << reg[rs1].name << ")\n";
+			memory[ad] = reg[rs2].value; // the memory address gets the LS byte in reg[rs2]
 			break;
-		case 1:	cout << "\tSH\tx" << name[rs2] << ", " << dec << (int)S_imm << "(" << name[rs1] << ")\n";
-			memory[ad] = reg[rs2];
-			memory[ad + 1] = reg[rs2] >> 8;
+		case 1:	cout << "\tSH\tx" << reg[rs2].name << ", " << dec << (int)S_imm << "(" << reg[rs1].name << ")\n";
+			memory[ad] = reg[rs2].value;
+			memory[ad + 1] = reg[rs2].value >> 8;
 			break;
-		case 2: cout << "\tSW\tx" << name [rs2] << ", " << dec << (int)S_imm << "(" << name[rs1] << ")\n";
-			memory[ad] = reg[rs2];
-			memory[ad + 1] = reg[rs2] >> 8;
-			memory[ad + 2] = reg[rs2] >> 16;
-			memory[ad + 3] = reg[rs2] >> 24;
+		case 2: cout << "\tSW\tx" << reg[rs2].name << ", " << dec << (int)S_imm << "(" << reg[rs1].name << ")\n";
+			memory[ad] = reg[rs2].value;
+			memory[ad + 1] = reg[rs2].value >> 8;
+			memory[ad + 2] = reg[rs2].value >> 16;
+			memory[ad + 3] = reg[rs2].value >> 24;
 			break;
 		default:
 			cout << "\tUnkown S Instruction \n";
@@ -152,31 +161,33 @@ void instDecExec(unsigned int instWord)
 	}
 	else if (opcode == 0x63) {
 		switch (funct3) {
-		case 6: cout << "\tBLTU\tx" << name[rs1] << ", " << name[rs2] << " address\n";
+		case 6: cout << "\tBLTU\tx" << reg[rs1].name << ", " << reg[rs2].name <<", 0x" << hex << (instPC + B_imm)<< "\n";
+			if ((unsigned int)reg[rs1].value < (unsigned int)reg[rs2].value) pc = instPC + B_imm;
 			break;
-		case 7: cout << "\tBGEU\tx" << name[rs1] << ", " << name[rs2] << " address\n";
+		case 7: cout << "\tBGEU\tx" << reg[rs1].name << ", " << reg[rs2].name <<", 0x" << hex << (instPC + B_imm) << "\n";
+			if ((unsigned int)reg[rs1].value >= (unsigned int)reg[rs2].value) pc = instPC + B_imm;
 			break;
 		default:
 			cout << "\tUnkown B Instruction \n";
 		}
 	}
 	else if (opcode == 73) {
-		if (reg[17] == 1) { // a7 = 1
+		if (reg[17].value == 1) { // a7 = 1
 			int x = 0; // will hold our int
 			int i = 3; // offset to reach most significant byte (little endian)
 
 			while (i > 0) {
-				x |= memory[reg[10] + i]; // captures the i-th byte by 'or'ing
+				x |= memory[reg[10].value + i]; // captures the i-th byte by 'or'ing
 				x <<= 8; // shift to allow place for next byte
 				i--;
 			}
-			x |= memory[reg[10]]; // add last byte without shifting
+			x |= memory[reg[10].value]; // add last byte without shifting
 
 			cout << x << '\n';
 		}
 
-		else if (reg[17] == 4) {
-			char c = memory[reg[10]; // c = char at the address stored in a0
+		else if (reg[17].value == 4) {
+			char c = memory[reg[10].value]; // c = char at the address stored in a0
 			string output = "";
 			while (c != 0) { // as long as we havent reached a null
 				output += c;
