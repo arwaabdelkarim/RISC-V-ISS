@@ -16,7 +16,7 @@
 
 using namespace std;
 
-struct info
+struct registers
 {
 	string name;
 	int value;
@@ -24,7 +24,7 @@ struct info
 
 unsigned int pc;
 unsigned char memory[(64+64)*1024];
-info reg[32]={{"zero",0},{"ra",0},{"sp",4194304},{"gp",0},{"tp",0},{"t0",0},{"t1",0},{"t2",0},{"s0",0},{"s1",0},{"a0",0},{"a1",0},{"a2",0},{"a3",0},{"a4",0},{"a5",0},{"a6",0},{"a7",0},{"s2",0},{"s3",0},{"s4",0},{"s5",0},{"s6",0},{"s7",0},{"s8",0},{"s9",0},{"s10",0},{"s11",0},{"t3",0},{"t4",0},{"t5",0},{"t6",0}};
+registers reg[32]={{"zero",0},{"ra",0},{"sp",4194304},{"gp",0},{"tp",0},{"t0",0},{"t1",0},{"t2",0},{"s0",0},{"s1",0},{"a0",0},{"a1",0},{"a2",0},{"a3",0},{"a4",0},{"a5",0},{"a6",0},{"a7",0},{"s2",0},{"s3",0},{"s4",0},{"s5",0},{"s6",0},{"s7",0},{"s8",0},{"s9",0},{"s10",0},{"s11",0},{"t3",0},{"t4",0},{"t5",0},{"t6",0}};
 
 
 void emitError(char *s)
@@ -52,13 +52,34 @@ void instDecExec(unsigned int instWord)
 	printPrefix(instPC, instWord);
 
 	opcode = instWord & 0x0000007F;
+	I_imm = (instWord >> 20) & 0x00000FFF;
+	funct3 = (instWord >> 12) & 0x00000007;
+	rs1 = (instWord >> 15) & 0x0000001F;
+	rs2 = (instWord >> 20) & 0x0000001F;
+
+	B_imm = ((instWord >> 7) & 0x1); 
+    B_imm = (B_imm << 10);
+	B_imm = (B_imm | ((instWord >> 8) & 0x00F) |  ((instWord >> 21) & 0x3F0) | ((instWord >> 20) & 0x800));
+	B_imm = B_imm | ((instWord >> 31) ? 0xFFFFF800 : 0x0);
+	B_imm = B_imm << 1;
+	
+
+	// extracts the immdeiate used for the jump and link instruction
+	J_temp = (instWord >> 20) & 0x000003FF; 
+	J_temp = J_temp << 1;
+	J_imm = J_imm | J_temp ;
+	J_temp = (instWord >> 19) & 0x00000001;
+	J_temp = J_temp << 11;
+	J_imm = J_imm | J_temp;
+	J_temp = (instWord >> 12) & 0x000000FF;
+	J_temp = J_temp << 12;
+	J_imm = J_imm | J_temp;
+	J_temp = (instWord >> 31) & 0x00000001;
+	J_temp = J_temp << 20;
+	J_imm = J_imm | J_temp;
 
 	// R Instructions
 	if(opcode == 0x33){	
-		rd = (instWord >> 7) & 0x0000001F;
-		funct3 = (instWord >> 12) & 0x00000007;
-		rs1 = (instWord >> 15) & 0x0000001F;
-		rs2 = (instWord >> 20) & 0x0000001F;
 		funct7 = (instWord >> 25) & 0x0000007F;	
 		switch(funct3){
 			case 0: if(funct7 == 32)
@@ -130,25 +151,15 @@ void instDecExec(unsigned int instWord)
 	} 
 	else if (opcode == 0x63)
 	{
-		B_imm = ((instWord >> 7) & 0x1); 
-        B_imm = (B_imm << 10);
-	    B_imm = (B_imm | ((instWord >> 8) & 0x00F) | 
-		    ((instWord >> 21) & 0x3F0) |
-		    ((instWord >> 20) & 0x800));
-	    B_imm = B_imm | ((instWord >> 31) ? 0xFFFFF800 : 0x0);
-	    B_imm = B_imm << 1;
-		funct3 = (instWord >> 12) & 0x00000007;
-		rs1 = (instWord >> 15) & 0x0000001F;
-		rs2 = (instWord >> 20) & 0x0000001F;
 		switch(funct3){
 			case 0: {
-						cout << "\tBEQ\t" <<reg[rs1].name <<","<< reg[rs2].name << ","<< hex << "0x" << instPC+B_imm << "\n";
-						instPC = (reg[rs1].value == reg[rs2].value) ? instPC+B_imm : instPC; 
+						cout << "\tBEQ\t" <<reg[rs1].name <<","<< reg[rs2].name << ","<< hex << "0x" << instPC+(int)B_imm << "\n";
+						pc = (reg[rs1].value == reg[rs2].value) ? instPC+(int)B_imm : pc; 
 					}
 					break;
 			case 1: {
-						cout << "\tBNE\t" <<reg[rs1].name <<","<< reg[rs2].name <<","<< hex << "0x" << instPC+B_imm <<"\n";
-						instPC = (reg[rs1].value != reg[rs2].value) ? instPC+B_imm : instPC; 
+						cout << "\tBNE\t" <<reg[rs1].name <<","<< reg[rs2].name <<","<< hex << "0x" << instPC+(int)B_imm <<"\n";
+						pc = (reg[rs1].value != reg[rs2].value) ? instPC+(int)B_imm : pc; 
 					}
 					break;
 			default:
@@ -158,34 +169,17 @@ void instDecExec(unsigned int instWord)
 	}
 	else if(opcode == 0x6F)
 	{
-		rd = (instWord >> 7) & 0x0000001F;
-		J_temp = (instWord >> 20) & 0x000003FF; 
-		J_temp = J_temp << 1;
-		J_imm = J_imm | J_temp ;
-		J_temp = (instWord >> 19) & 0x00000001;
-		J_temp = J_temp << 11;
-		J_imm = J_imm | J_temp;
-		J_temp = (instWord >> 12) & 0x000000FF;
-		J_temp = J_temp << 12;
-		J_imm = J_imm | J_temp;
-		J_temp = (instWord >> 31) & 0x00000001;
-		J_temp = J_temp << 20;
-		J_imm = J_imm | J_temp;
 
-		cout << "\tJAL\t" <<reg[rd].name <<","<< hex << "0x" << instPC+J_imm <<"\n";
+		cout << "\tJAL\t" <<reg[rd].name <<","<< hex << "0x" << instPC+(int)J_imm <<"\n";
 		reg[rd].value = pc;
-		instPC = instPC + J_imm;
+		pc = instPC + J_imm;
 	}
 	else if(opcode == 0x67)
 	{
-		rd = (instWord >> 7) & 0x0000001F;
-		funct3 = (instWord >> 12) & 0x00000007;
-		rs1 = (instWord >> 15) & 0x0000001F;
-		I_imm = (instWord >> 20) & 0x00000FFF;
 
-		cout << "\tJALR\t" <<reg[rd].name <<","<< reg[rs1].name <<","<< hex << "0x" << reg[rs1].value + I_imm <<"\n";
+		cout << "\tJALR\t" <<reg[rd].name <<","<< reg[rs1].name <<","<< hex << "0x" << reg[rs1].value + (int)I_imm <<"\n";
 		reg[rd].value = pc;
-		instPC = reg[rs1].value + I_imm;
+		pc = reg[rs1].value + (int)I_imm;
 	}
 	else {
 		cout << "\tUnkown Instruction \n";
@@ -199,8 +193,7 @@ int main(int argc, char *argv[]){
 	ifstream inFile;
 	ofstream outFile;
 	// for sp the initail value is (64*64*1024) 
-	info reg[32]={{"zero",0},{"ra",0},{"sp",4194304},{"gp",0},{"tp",0},{"t0",0},{"t1",0},{"t2",0},{"s0",0},{"s1",0},{"a0",0},{"a1",0},{"a2",0},{"a3",0},{"a4",0},{"a5",0},{"a6",0},{"a7",0},{"s2",0},{"s3",0},{"s4",0},{"s5",0},{"s6",0},{"s7",0},{"s8",0},{"s9",0},{"s10",0},{"s11",0},{"t3",0},{"t4",0},{"t5",0},{"t6",0}};
-
+	
 	if(argc<1) emitError("use: rvcdiss <machine_code_file_name>\n");
 
 	inFile.open(argv[1], ios::in | ios::binary | ios::ate);
