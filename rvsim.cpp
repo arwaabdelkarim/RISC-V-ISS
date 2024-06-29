@@ -43,15 +43,16 @@ void printPrefix(unsigned int instA, unsigned int instW){
 	cout << "0x" << hex << std::setfill('0') << std::setw(8) << instA << "\t0x" << std::setw(8) << instW;
 }
 
-int mem_to_reg(int ad, int i) { // i = n-1;
-	int x = 0;
+// this is a function to load i+1 bytes to a reg, i is offset to reach most significant byte (little endian)
+int mem_to_reg(int ad, int i) { 
+	int x = 0; // will hold our int
 
 	while (i > 0) {
-		x |= memory[ad + i];
-		x <<= 8; // need '=' for that!
+		x |= memory[ad + i]; // captures the i-th byte by 'or'ing
+		x <<= 8; // shift to allow place for next byte
 		i--;
 	}
-	x |= memory[ad];
+	x |= memory[ad]; // add last byte without shifting
 
 	return x;
 }
@@ -120,11 +121,11 @@ void instDecExec(unsigned int instWord)
 		switch (funct3) {
 		case 0: cout << "\tLB\t" <<  reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
 			temp = memory[ad];
-			reg[rd].value = memory[ad] | ((temp >> 7) ? 0xFFFFFF00 : 0x0);
+			reg[rd].value = memory[ad] | ((temp >> 7) ? 0xFFFFFF00 : 0x0); // sign extending
 			break;
 		case 1:	cout << "\tLH\tx" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
 			temp = mem_to_reg(ad, 1);
-			reg[rd].value = temp | ((temp >> 15)? (0xFFFF0000): 0x0);
+			reg[rd].value = temp | ((temp >> 15)? (0xFFFF0000): 0x0); // sign extending
 			break;
 		case 2:	cout << "\tLW\tx" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
 			reg[rd].value = mem_to_reg(ad, 3);
@@ -162,40 +163,32 @@ void instDecExec(unsigned int instWord)
 	else if (opcode == 0x63) {
 		switch (funct3) {
 		case 6: cout << "\tBLTU\tx" << reg[rs1].name << ", " << reg[rs2].name <<", 0x" << hex << (instPC + B_imm)<< "\n";
-			if ((unsigned int)reg[rs1].value < (unsigned int)reg[rs2].value) pc = instPC + B_imm;
+			if ((unsigned int)reg[rs1].value < (unsigned int)reg[rs2].value) pc = instPC + (int)B_imm;
 			break;
 		case 7: cout << "\tBGEU\tx" << reg[rs1].name << ", " << reg[rs2].name <<", 0x" << hex << (instPC + B_imm) << "\n";
-			if ((unsigned int)reg[rs1].value >= (unsigned int)reg[rs2].value) pc = instPC + B_imm;
+			if ((unsigned int)reg[rs1].value >= (unsigned int)reg[rs2].value) pc = instPC + (int)B_imm;
 			break;
 		default:
 			cout << "\tUnkown B Instruction \n";
 		}
 	}
 	else if (opcode == 73) {
-		if (reg[17].value == 1) { // a7 = 1
-			int x = 0; // will hold our int
-			int i = 3; // offset to reach most significant byte (little endian)
-
-			while (i > 0) {
-				x |= memory[reg[10].value + i]; // captures the i-th byte by 'or'ing
-				x <<= 8; // shift to allow place for next byte
-				i--;
-			}
-			x |= memory[reg[10].value]; // add last byte without shifting
-
-			cout << x << '\n';
-		}
-
+		if (reg[17].value == 1)  // a7 = 1
+			cout << reg[10].value;	
 		else if (reg[17].value == 4) {
-			char c = memory[reg[10].value]; // c = char at the address stored in a0
+			int ad = reg[10].value;
+			char c = memory[ad]; // c = char at the address stored in a0
 			string output = "";
+
 			while (c != 0) { // as long as we havent reached a null
 				output += c;
+				ad++;
+				c = memory[ad];
 			}
 			cout << output;
 		}
 		else {
-			cout << "\tUnkown Ecall Instruction \n";
+			cout << "\tUnsupported Ecall Functionality\n";
 		}
 	}
 	else {
