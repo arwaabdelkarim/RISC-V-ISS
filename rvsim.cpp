@@ -430,10 +430,10 @@ void instDecExec(unsigned int instWord)
 	}
 
 	// Ecall instructions
-	else if (opcode == 73)
+	else if (opcode == 0x73)
 	{
 		if (reg[17].value == 1)  // a7 = 1
-			cout << reg[10].value;
+			cout << "\tEcall:\t"<< dec << reg[10].value << '\n';
 		else if (reg[17].value == 4)
 		{
 			int ad = reg[10].value;
@@ -446,7 +446,12 @@ void instDecExec(unsigned int instWord)
 				ad++;
 				c = memory[ad];
 			}
-			cout << output;
+			cout << "\tEcall:\t" << output <<'\n';
+		}
+		else if (reg[17].value == 10)
+		{
+			cout << "\tEcall\n";
+			exit(0);
 		}
 		else
 		{
@@ -468,7 +473,7 @@ int main(int argc, char *argv[]){
 	unsigned int instWord=0;
 	ifstream inFile;
 	ofstream outFile;
-	// for sp the initail value is (64*64*1024) 
+	// for sp the initail value is ((64+64)*1024) 
 	
 	if(argc<1) emitError("use: rvcdiss <machine_code_file_name>\n");
 
