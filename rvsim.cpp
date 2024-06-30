@@ -66,15 +66,14 @@ void instDecExec(unsigned int instWord)
 	funct7 = (instWord >> 25) & 0x0000007F;
 
 	// Extraction of I immediate
-
 	I_imm = ((instWord >> 20) & 0x7FF) | (((instWord >> 31) ? 0xFFFFF800 : 0x0));
 
 	//Extraction of B immediate 
 	B_imm = ((instWord >> 7) & 0x1);
 	B_imm = (B_imm << 10);
 	B_imm = (B_imm | ((instWord >> 8) & 0x00F) |
-		((instWord >> 21) & 0x3F0) |
-		((instWord >> 20) & 0x800));
+			((instWord >> 21) & 0x3F0) |
+			((instWord >> 20) & 0x800));
 	B_imm = B_imm | ((instWord >> 31) ? 0xFFFFF800 : 0x0);
 	B_imm = B_imm << 1;
 
@@ -82,14 +81,15 @@ void instDecExec(unsigned int instWord)
 	U_imm = ((instWord >> 12) & 0xFFFFF) | (((instWord >> 31) ? 0xFFF00000 : 0x0));
 
 	// - inst[31] - inst[30:25] - inst[11:7]
-	  //temp = (((instWord >> 7) & 0x0000001F) | ((instWord >> 25 & 0x0000003F) << 5));
-	  //S_imm = temp | (((instWord >> 31) ? 0xFFFFF800 : 0x0));
+	//temp = (((instWord >> 7) & 0x0000001F) | ((instWord >> 25 & 0x0000003F) << 5));
+	//S_imm = temp | (((instWord >> 31) ? 0xFFFFF800 : 0x0));
 
+	//Extraction of S immediate 
 	S_imm = (((instWord >> 7) & 0x0000001F) |
 		((instWord >> 20 & 0x00000FE0))) |
 		((instWord >> 31) ? 0xFFFFF800 : 0x0);
 
-	// extracts the immediate used for the jump and link instruction
+	//Extraction of J immediate 
 	J_temp = (instWord >> 20) & 0x000003FF;
 	J_temp = J_temp << 1;
 	J_imm = J_imm | J_temp;
@@ -138,20 +138,20 @@ void instDecExec(unsigned int instWord)
 				cout << "\tSLT\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
 				reg[rd].value = (reg[rs1].value < reg[rs2].value) ? 1 : 0;
 			}
-				  break;
+				break;
 			case 3: 
 			{
 				cout << "\tSLTU\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
 				reg[rd].value = ((unsigned int)reg[rs1].value < (unsigned int)reg[rs2].value) ? 1 : 0;
 			}
-				  break;
+				break;
 
 			case 4: 
 			{
 				cout << "\tXOR\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
 				reg[rd].value = reg[rs1].value ^ reg[rs2].value;
 			}
-				  break;
+				break;
 
 			case 5: 
 			{
@@ -172,13 +172,13 @@ void instDecExec(unsigned int instWord)
 				cout << "\tOR\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
 				reg[rd].value = reg[rs1].value | reg[rs2].value;
 			}
-				  break;
+				break;
 			case 7: 
 			{
 				cout << "\tAND\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
 				reg[rd].value = reg[rs1].value & reg[rs2].value;
 			}
-				  break;
+				break;
 		
 			default: cout << "\tUnkown R Instruction \n";
 		}
@@ -312,7 +312,8 @@ void instDecExec(unsigned int instWord)
 	{	
 		//stores the address of the LS byte we need
 		int ad = reg[rs1].value + (int)S_imm; 
-		switch (funct3) {
+		switch (funct3)
+		{
 			case 0:	
 			{
 				cout << "\tSB\tx" << reg[rs2].name << ", " << dec << (int)S_imm << "(" << reg[rs1].name << ")\n";
@@ -348,20 +349,21 @@ void instDecExec(unsigned int instWord)
 	// B instructions
 	else if (opcode == 0x63) 
 	{
-		switch (funct3) {
+		switch (funct3) 
+		{
 			case 0:
 			{
 				cout << "\tBEQ\t" << reg[rs1].name << "," << reg[rs2].name << "," << hex << "0x" << instPC + (int)B_imm << "\n";
 				pc = (reg[rs1].value == reg[rs2].value) ? instPC + (int)B_imm : pc;
 			}
-			break;
+				break;
 
 			case 1:
 			{
 				cout << "\tBNE\t" << reg[rs1].name << "," << reg[rs2].name << "," << hex << "0x" << instPC + (int)B_imm << "\n";
 				pc = (reg[rs1].value != reg[rs2].value) ? instPC + (int)B_imm : pc;
 			}
-			break;
+				break;
 
 			case 4:
 			{
@@ -369,7 +371,7 @@ void instDecExec(unsigned int instWord)
 				if (reg[rs1].value < reg[rs2].value)
 					pc = instPC + (int)B_imm;	
 			}
-			break;
+				break;
 
 			case 5:
 			{
@@ -377,21 +379,21 @@ void instDecExec(unsigned int instWord)
 				if (reg[rs1].value >= reg[rs2].value)
 					pc = instPC + (int)B_imm;
 			}
-			break;
+				break;
 
 			case 6:
 			{
 				cout << "\tBLTU\tx" << reg[rs1].name << ", " << reg[rs2].name << ", 0x" << hex << (instPC + B_imm) << "\n";
 				if ((unsigned int)reg[rs1].value < (unsigned int)reg[rs2].value) pc = instPC + (int)B_imm;
 			}
-			break;
+				break;
 
 			case 7:
 			{
 				cout << "\tBGEU\tx" << reg[rs1].name << ", " << reg[rs2].name << ", 0x" << hex << (instPC + B_imm) << "\n";
 				if ((unsigned int)reg[rs1].value >= (unsigned int)reg[rs2].value) pc = instPC + (int)B_imm;
 			}
-			break;
+				break;
 
 			default:
 				cout << "\tUnkown B Instruction \n";
@@ -399,24 +401,24 @@ void instDecExec(unsigned int instWord)
 	}
 
 	// U instructions 
-	else if (opcode == 0x37) //not done yet
+	else if (opcode == 0x37) 
 	{
-		cout << "\tLUI\t" << reg[rd].name << ", " << dec << ((int)U_imm << 12) << "\n"; //shifting 12 bits to the right to load to upper 20 bits in rd
+		cout << "\tLUI\t" << reg[rd].name << ", " << dec << ((int)U_imm) << "\n"; 
+		U_imm <<= 12;  //shifting 12 bits to the right to load to upper 20 bits in rd
 		reg[rd].value = (int)U_imm;
-		cout << reg[rd].value << endl;
+		// cout << reg[rd].value << endl; for debugging
 	}
-
-	else if (opcode == 0x17) //not done yet 
+	else if (opcode == 0x17) 
 	{
-		cout << "\tAUIPC\t" << reg[rd].name << ", " << dec << ((int)U_imm << 12) << "\n";
+		cout << "\tAUIPC\t" << reg[rd].name << ", " << dec << ((int)U_imm) << "\n";
+		U_imm <<= 12;
 		reg[rd].value = instPC + (int)U_imm;
-		cout << reg[rd].value << endl;
+		// cout << reg[rd].value << endl; for debugging
 	}
 
 	// J instructions
 	else if (opcode == 0x6F)
 	{
-
 		cout << "\tJAL\t" << reg[rd].name << "," << hex << "0x" << instPC + (int)J_imm << "\n";
 		reg[rd].value = pc;
 		pc = instPC + J_imm;
@@ -461,10 +463,8 @@ void instDecExec(unsigned int instWord)
 }
 
 
-
-int main(int argc, char *argv[]){
-
-
+int main(int argc, char *argv[])
+{
 	unsigned int instWord=0;
 	ifstream inFile;
 	ofstream outFile;
@@ -479,7 +479,8 @@ int main(int argc, char *argv[]){
 		int fsize = inFile.tellg();
 
 		inFile.seekg (0, inFile.beg);
-		if(!inFile.read((char *)memory, fsize)) emitError("Cannot read from input file\n");
+		if(!inFile.read((char *)memory, fsize)) 
+			emitError("Cannot read from input file\n");
 
 		while(true)
 		{
