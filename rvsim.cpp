@@ -308,6 +308,7 @@ void instDecExec(unsigned int instWord)
 				cout << "\tUnkown I-Load Instruction \n";
 		}
 	}
+  
 	// S Instructions
 	else if (opcode == 0x23) 	
 	{	
@@ -430,13 +431,14 @@ void instDecExec(unsigned int instWord)
 		reg[rd].value = pc;
 		pc = reg[rs1].value + (int)I_imm;
 	}
-
+  
 	// Ecall instruction
 	else if (opcode == 0x73)
 	{
 		cout << "\tECALL\n";
 		if (reg[17].value == 1)  // a7 = 1
-			cout << dec << reg[10].value << endl;
+			cout << dec << reg[10].value << '\n';
+
 		else if (reg[17].value == 4)
 		{
 			int ad = reg[10].value;
@@ -449,7 +451,7 @@ void instDecExec(unsigned int instWord)
 				ad++;
 				c = memory[ad];
 			}
-			cout << output;
+			cout << output <<'\n';
 		}
 		else if (reg[17].value == 10)
 		{
@@ -473,11 +475,13 @@ int main(int argc, char *argv[])
 	ifstream inFile;
 	ifstream dataFile;
 	ofstream outFile;
+
 	// for sp the initisl value is (64*64*1024) 
 	// char *a = new char; for debugging purposes
 
 	if(argc<2) 
 		emitError("use: rvcdiss <machine_code_file_name>\n");
+
 
 	inFile.open(argv[1], ios::in | ios::binary | ios::ate);
 
