@@ -29,7 +29,8 @@ void emitError(char *s)
 }
 
 
-void printPrefix(unsigned int instA, unsigned int instW){
+void printPrefix(unsigned int instA, unsigned int instW)
+{
 	cout << "0x" << hex << setfill('0') << setw(8) << instA << "\t0x" << setw(8) << instW;
 }
 
@@ -307,6 +308,7 @@ void instDecExec(unsigned int instWord)
 				cout << "\tUnkown I-Load Instruction \n";
 		}
 	}
+  
 	// S Instructions
 	else if (opcode == 0x23) 	
 	{	
@@ -410,7 +412,7 @@ void instDecExec(unsigned int instWord)
 	}
 	else if (opcode == 0x17) 
 	{
-		cout << "\tAUIPC\t" << reg[rd].name << ", " << dec << ((int)U_imm) << "\n";
+		cout << "\tAUIPC\t" << reg[rd].name << ", " << hex << "0x" << ((int)U_imm) << "\n"; 
 		U_imm <<= 12;
 		reg[rd].value = instPC + (int)U_imm;
 		// cout << reg[rd].value << endl; for debugging
@@ -423,19 +425,20 @@ void instDecExec(unsigned int instWord)
 		reg[rd].value = pc;
 		pc = instPC + J_imm;
 	}
-
 	else if (opcode == 0x67)
 	{
 		cout << "\tJALR\t" << reg[rd].name << "," << reg[rs1].name << "," << hex << "0x" << reg[rs1].value + (int)I_imm << "\n";
 		reg[rd].value = pc;
 		pc = reg[rs1].value + (int)I_imm;
 	}
-
-	// Ecall instructions
+  
+	// Ecall instruction
 	else if (opcode == 0x73)
 	{
+		cout << "\tECALL\n";
 		if (reg[17].value == 1)  // a7 = 1
-			cout << "\tEcall:\t"<< dec << reg[10].value << '\n';
+			cout << dec << reg[10].value << '\n';
+
 		else if (reg[17].value == 4)
 		{
 			int ad = reg[10].value;
@@ -448,11 +451,10 @@ void instDecExec(unsigned int instWord)
 				ad++;
 				c = memory[ad];
 			}
-			cout << "\tEcall:\t" << output <<'\n';
+			cout << output <<'\n';
 		}
 		else if (reg[17].value == 10)
 		{
-			cout << "\tEcall\n";
 			exit(0);
 		}
 		else
@@ -460,7 +462,6 @@ void instDecExec(unsigned int instWord)
 			cout << "\tUnsupported Ecall Functionality\n";
 		}
 	}
-
 	else
 	{
 		cout << "\tUnkown Instruction \n";
@@ -470,23 +471,45 @@ void instDecExec(unsigned int instWord)
 
 int main(int argc, char *argv[])
 {
-	unsigned int instWord=0;
+	unsigned int instWord = 0;
 	ifstream inFile;
+	ifstream dataFile;
 	ofstream outFile;
-	// for sp the initail value is ((64+64)*1024) 
-	
-	if(argc<1) emitError("use: rvcdiss <machine_code_file_name>\n");
+
+	// for sp the initisl value is (64*64*1024) 
+	// char *a = new char; for debugging purposes
+
+	if(argc<2) 
+		emitError("use: rvcdiss <machine_code_file_name>\n");
+
 
 	inFile.open(argv[1], ios::in | ios::binary | ios::ate);
+
+	// checking if we had a third argument input in the terminal; thus, we have a data file
+	if (argc == 3)
+		dataFile.open(argv[2], ios::in | ios::binary | ios::ate);
+
+	if (dataFile.is_open())
+	{	
+		// current pos of file pointer, dictates size (last element?)
+		int curr = dataFile.tellg(); 
+		// move the file pointer to the beginning, 0 is the offset
+		dataFile.seekg (0, dataFile.beg); 
+		// read the data file into the memory array, curr shows the number of bits 
+		if(!dataFile.read(/*a*/(char *)(memory + 0x00010000), curr)) 
+			emitError("Cannot read from data file\n");
+	}
+	//cout << a << endl; for debugging purposes
 
 	if(inFile.is_open())
 	{
 		int fsize = inFile.tellg();
-
 		inFile.seekg (0, inFile.beg);
 		if(!inFile.read((char *)memory, fsize)) 
 			emitError("Cannot read from input file\n");
-
+		
+	
+		
 		while(true)
 		{
 			instWord = 	(unsigned char)memory[pc] |
@@ -494,13 +517,11 @@ int main(int argc, char *argv[])
 						(((unsigned char)memory[pc+2])<<16) |
 						(((unsigned char)memory[pc+3])<<24);
 			pc += 4;
-			// remove the following line once you have a complete simulator
-			//if(pc==32) break;			// stop when PC reached address 32
-			instDecExec(instWord);
+
 			if (instWord == 0)
-            {
-				break;
-            }
+                break;
+			else 
+				instDecExec(instWord);
 		}
 	} else emitError("Cannot access input file\n");
 }
