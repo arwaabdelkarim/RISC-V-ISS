@@ -468,6 +468,14 @@ void instDecExec(unsigned int instWord)
 	}
 }
 
+void Decompress(unsigned int insthalfWord)
+{
+
+// after decompressing the instruction halfword we will call the other function
+
+	instDecExec(insthalfWord);
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -513,15 +521,22 @@ int main(int argc, char *argv[])
 		while(true)
 		{
 			instWord = 	(unsigned char)memory[pc] |
-						(((unsigned char)memory[pc+1])<<8) |
-						(((unsigned char)memory[pc+2])<<16) |
-						(((unsigned char)memory[pc+3])<<24);
-			pc += 4;
+						(((unsigned char)memory[pc+1])<<8);
+						
+			pc += 2;
 
 			if (instWord == 0)
                 break;
-			else 
+		    else if((instWord & 0x00000003) == 3)
+			{
+				instWord = instWord | (((unsigned char)memory[pc+2])<<16) |
+			               (((unsigned char)memory[pc+3])<<24);
+				pc += 2;
 				instDecExec(instWord);
+			}	
+			else
+			    Decompress(instWord);
+
 		}
 	} else emitError("Cannot access input file\n");
 }
