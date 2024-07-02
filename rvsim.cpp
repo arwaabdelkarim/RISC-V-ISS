@@ -117,11 +117,13 @@ void instDecExec(unsigned int instWord)
 				if (funct7 == 32)
 				{
 					cout << "\tSUB\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
+					if (rd == 0) return; // to keep reg zero unchanged
 					reg[rd].value = reg[rs1].value - reg[rs2].value;
 				}
 				else
 				{
 					cout << "\tADD\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
+					if (rd == 0) return; // to keep reg zero unchanged
 					reg[rd].value = reg[rs1].value + reg[rs2].value;
 				}
 			}
@@ -130,6 +132,7 @@ void instDecExec(unsigned int instWord)
 			case 1: 
 			{
 				cout << "\tSLL\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
+				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = reg[rs1].value << reg[rs2].value;
 			}
 				break;
@@ -137,12 +140,14 @@ void instDecExec(unsigned int instWord)
 			case 2: 
 			{
 				cout << "\tSLT\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
+				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = (reg[rs1].value < reg[rs2].value) ? 1 : 0;
 			}
 				break;
 			case 3: 
 			{
 				cout << "\tSLTU\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
+				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = ((unsigned int)reg[rs1].value < (unsigned int)reg[rs2].value) ? 1 : 0;
 			}
 				break;
@@ -150,6 +155,7 @@ void instDecExec(unsigned int instWord)
 			case 4: 
 			{
 				cout << "\tXOR\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
+				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = reg[rs1].value ^ reg[rs2].value;
 			}
 				break;
@@ -159,11 +165,13 @@ void instDecExec(unsigned int instWord)
 				if (funct7 == 32)
 				{
 					cout << "\tSRA\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
+					if (rd == 0) return; // to keep reg zero unchanged
 					reg[rd].value = reg[rs1].value >> reg[rs2].value;
 				}
 				else
 				{
 					cout << "\tSRL\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
+					if (rd == 0) return; // to keep reg zero unchanged
 					reg[rd].value = (unsigned int)reg[rs1].value >> reg[rs2].value;
 				}
 			}
@@ -171,12 +179,14 @@ void instDecExec(unsigned int instWord)
 			case 6: 
 			{
 				cout << "\tOR\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
+				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = reg[rs1].value | reg[rs2].value;
 			}
 				break;
 			case 7: 
 			{
 				cout << "\tAND\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
+				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = reg[rs1].value & reg[rs2].value;
 			}
 				break;
@@ -193,12 +203,14 @@ void instDecExec(unsigned int instWord)
 			case 0:
 			{
 				cout << "\tADDI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = reg[rs1].value + I_imm;
 			}
 				break;
 			case 1:
 			{
 				cout << "\tSLLI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+				if (rd == 0) return; // to keep reg zero unchanged
 				I_imm = I_imm & 0x1F;
 				reg[rd].value = reg[rs1].value << (unsigned int)I_imm;
 			}
@@ -207,6 +219,7 @@ void instDecExec(unsigned int instWord)
 			{
 				// not tested yet
 				cout << "\tSLTI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = (reg[rs1].value < I_imm) ? 1 : 0;
 			}
 				break;
@@ -214,12 +227,14 @@ void instDecExec(unsigned int instWord)
 			{
 				// not tested yet
 				cout << "\tSLTIU\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = ((unsigned int)reg[rs1].value < I_imm) ? 1 : 0;
 			}
 				break;
 			case 4:
 			{
 				cout << "\tXORI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = reg[rs1].value ^ I_imm;
 			}
 				break;
@@ -229,6 +244,7 @@ void instDecExec(unsigned int instWord)
 				{
 					I_imm = I_imm & 0x1F;
 					cout << "\tSRAI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+					if (rd == 0) return; // to keep reg zero unchanged
 					reg[rd].value = reg[rs1].value >> (unsigned int)I_imm;
 					// cout << dec << reg[rd] << "\n"; for debugging
 				}
@@ -236,6 +252,7 @@ void instDecExec(unsigned int instWord)
 				{
 					I_imm = I_imm & 0x1F;
 					cout << "\tSRLI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+					if (rd == 0) return; // to keep reg zero unchanged
 					reg[rd].value = (unsigned int)reg[rs1].value >> (unsigned int)I_imm;
 				}
 			}
@@ -243,12 +260,14 @@ void instDecExec(unsigned int instWord)
 			case 6:
 			{
 				cout << "\tORI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = reg[rs1].value | I_imm;
 			}
 				break;
 			case 7:
 			{
 				cout << "\tANDI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = reg[rs1].value & I_imm;
 			}
 				break;
@@ -267,6 +286,7 @@ void instDecExec(unsigned int instWord)
 			case 0: 
 			{
 				cout << "\tLB\t" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
+				if (rd == 0) return; // to keep reg zero unchanged
 				temp = memory[ad];
 				// sign extending
 				reg[rd].value = memory[ad] | ((temp >> 7) ? 0xFFFFFF00 : 0x0); 
@@ -276,6 +296,7 @@ void instDecExec(unsigned int instWord)
 			case 1:	
 			{
 				cout << "\tLH\tx" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
+				if (rd == 0) return; // to keep reg zero unchanged
 				temp = mem_to_reg(ad, 1);
 				// sign extending
 				reg[rd].value = temp | ((temp >> 15) ? (0xFFFF0000) : 0x0); 
@@ -285,6 +306,7 @@ void instDecExec(unsigned int instWord)
 			case 2:	
 			{
 				cout << "\tLW\tx" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
+				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = mem_to_reg(ad, 3);
 			}
 				break;
@@ -292,6 +314,7 @@ void instDecExec(unsigned int instWord)
 			case 4:	
 			{
 				cout << "\tLBU\tx" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
+				if (rd == 0) return; // to keep reg zero unchanged
 				// automatically zero extended because memory is unsigned char
 				reg[rd].value = memory[ad];
 			}
@@ -300,6 +323,7 @@ void instDecExec(unsigned int instWord)
 			case 5:	
 			{
 				cout << "\tLHU\tx" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
+				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = mem_to_reg(ad, 1);
 			}
 				break;
@@ -405,14 +429,19 @@ void instDecExec(unsigned int instWord)
 	// U instructions 
 	else if (opcode == 0x37) 
 	{
-		cout << "\tLUI\t" << reg[rd].name << ", " << dec << ((int)U_imm) << "\n"; 
+		cout << "\tLUI\t" << reg[rd].name << ", " << dec << ((int)U_imm) << "\n";
+		if (rd == 0) return; // to keep reg zero unchanged
 		U_imm <<= 12;  //shifting 12 bits to the right to load to upper 20 bits in rd
 		reg[rd].value = (int)U_imm;
 		// cout << reg[rd].value << endl; for debugging
 	}
 	else if (opcode == 0x17) 
 	{
-		cout << "\tAUIPC\t" << reg[rd].name << ", " << hex << "0x" << ((int)U_imm) << "\n"; 
+
+		cout << "\tAUIPC\t" << reg[rd].name << ", " << dec << ((int)U_imm) << "\n";
+		if (rd == 0) return; // to keep reg zero unchanged
+
+
 		U_imm <<= 12;
 		reg[rd].value = instPC + (int)U_imm;
 		// cout << reg[rd].value << endl; for debugging
@@ -422,14 +451,16 @@ void instDecExec(unsigned int instWord)
 	else if (opcode == 0x6F)
 	{
 		cout << "\tJAL\t" << reg[rd].name << "," << hex << "0x" << instPC + (int)J_imm << "\n";
-		reg[rd].value = pc;
 		pc = instPC + J_imm;
+		if (rd == 0) return; // to keep reg zero unchanged
+		reg[rd].value = pc;
 	}
 	else if (opcode == 0x67)
 	{
 		cout << "\tJALR\t" << reg[rd].name << "," << reg[rs1].name << "," << hex << "0x" << reg[rs1].value + (int)I_imm << "\n";
-		reg[rd].value = pc;
 		pc = reg[rs1].value + (int)I_imm;
+		if (rd == 0) return; // to keep reg zero unchanged
+		reg[rd].value = pc;
 	}
   
 	// Ecall instruction
