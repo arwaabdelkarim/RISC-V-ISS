@@ -109,7 +109,6 @@ void instDecExec(unsigned int instWord)
 	// R Instructions
 	if (opcode == 0x33) 
 	{
-		funct7 = (instWord >> 25) & 0x0000007F;
 		switch (funct3) 
 		{
 			case 0: 
@@ -275,7 +274,7 @@ void instDecExec(unsigned int instWord)
 
 			case 1:	
 			{
-				cout << "\tLH\tx" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
+				cout << "\tLH\t" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
 				temp = mem_to_reg(ad, 1);
 				// sign extending
 				reg[rd].value = temp | ((temp >> 15) ? (0xFFFF0000) : 0x0); 
@@ -284,14 +283,14 @@ void instDecExec(unsigned int instWord)
 
 			case 2:	
 			{
-				cout << "\tLW\tx" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
+				cout << "\tLW\t" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
 				reg[rd].value = mem_to_reg(ad, 3);
 			}
 				break;
 
 			case 4:	
 			{
-				cout << "\tLBU\tx" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
+				cout << "\tLBU\t" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
 				// automatically zero extended because memory is unsigned char
 				reg[rd].value = memory[ad];
 			}
@@ -299,7 +298,7 @@ void instDecExec(unsigned int instWord)
 
 			case 5:	
 			{
-				cout << "\tLHU\tx" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
+				cout << "\tLHU\t" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
 				reg[rd].value = mem_to_reg(ad, 1);
 			}
 				break;
@@ -318,7 +317,7 @@ void instDecExec(unsigned int instWord)
 		{
 			case 0:	
 			{
-				cout << "\tSB\tx" << reg[rs2].name << ", " << dec << (int)S_imm << "(" << reg[rs1].name << ")\n";
+				cout << "\tSB\t" << reg[rs2].name << ", " << dec << (int)S_imm << "(" << reg[rs1].name << ")\n";
 				// the memory address gets the LS byte in reg[rs2]
 				memory[ad] = reg[rs2].value; 
 			}
@@ -326,7 +325,7 @@ void instDecExec(unsigned int instWord)
 
 			case 1:	
 			{
-				cout << "\tSH\tx" << reg[rs2].name << ", " << dec << (int)S_imm << "(" << reg[rs1].name << ")\n";
+				cout << "\tSH\t" << reg[rs2].name << ", " << dec << (int)S_imm << "(" << reg[rs1].name << ")\n";
 				memory[ad] = reg[rs2].value;
 				memory[ad + 1] = reg[rs2].value >> 8;
 			}
@@ -334,7 +333,7 @@ void instDecExec(unsigned int instWord)
 
 			case 2: 
 			{
-				cout << "\tSW\tx" << reg[rs2].name << ", " << dec << (int)S_imm << "(" << reg[rs1].name << ")\n";
+				cout << "\tSW\t" << reg[rs2].name << ", " << dec << (int)S_imm << "(" << reg[rs1].name << ")\n";
 				memory[ad] = reg[rs2].value;
 				memory[ad + 1] = reg[rs2].value >> 8;
 				memory[ad + 2] = reg[rs2].value >> 16;
@@ -385,14 +384,14 @@ void instDecExec(unsigned int instWord)
 
 			case 6:
 			{
-				cout << "\tBLTU\tx" << reg[rs1].name << ", " << reg[rs2].name << ", 0x" << hex << (instPC + B_imm) << "\n";
+				cout << "\tBLTU\t" << reg[rs1].name << ", " << reg[rs2].name << ", 0x" << hex << (instPC + B_imm) << "\n";
 				if ((unsigned int)reg[rs1].value < (unsigned int)reg[rs2].value) pc = instPC + (int)B_imm;
 			}
 				break;
 
 			case 7:
 			{
-				cout << "\tBGEU\tx" << reg[rs1].name << ", " << reg[rs2].name << ", 0x" << hex << (instPC + B_imm) << "\n";
+				cout << "\tBGEU\t" << reg[rs1].name << ", " << reg[rs2].name << ", 0x" << hex << (instPC + B_imm) << "\n";
 				if ((unsigned int)reg[rs1].value >= (unsigned int)reg[rs2].value) pc = instPC + (int)B_imm;
 			}
 				break;
@@ -527,10 +526,10 @@ int main(int argc, char *argv[])
 
 			if (instWord == 0)
                 break;
-		    else if((instWord & 0x00000003) == 3)
+		    else if((instWord & 0x0003) == 0x3)
 			{
-				instWord = instWord | (((unsigned char)memory[pc+2])<<16) |
-			               (((unsigned char)memory[pc+3])<<24);
+				instWord = instWord | (((unsigned char)memory[pc])<<16) |
+			               (((unsigned char)memory[pc+1])<<24);
 				pc += 2;
 				instDecExec(instWord);
 			}	
