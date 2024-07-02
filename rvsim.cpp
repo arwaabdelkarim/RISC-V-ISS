@@ -3,7 +3,7 @@
 #include "stdlib.h"
 #include <iomanip>
 #include <string>
-
+#include <bitset>
 using namespace std;
 
 struct registers
@@ -49,6 +49,43 @@ int mem_to_reg(int ad, int i) {
 	return x;
 }
 
+unsigned int Decompress(unsigned int instHalf)
+{
+	unsigned int opcode, rs2, rs1, rd, func4, rd_dash, rs1_dash, rs2_dash, offset, func3;
+	unsigned int CJ_imm = 0x0, CI_imm = 0x0, CSS_imm = 0x0, CIW_imm = 0x0, CL_imm = 0x0, CS_imm = 0x0, CB_imm = 0x0;
+	
+	opcode = instHalf & 0x00000003;
+	rs2 = (instHalf >> 2) & 0x0000001F;
+	rd = (instHalf>> 7) & 0x0000001F;
+	rs1 = (instHalf>> 7) & 0x0000001F;
+	func4 = (instHalf>> 12) & 0x0000000F;
+	func3 = (instHalf>> 13) & 0x00000007;
+	rd_dash = (instHalf>> 2) & 0x00000007;
+	rs2_dash = (instHalf>> 2) & 0x00000007;
+	rs1_dash = (instHalf>> 7) & 0x00000007;
+
+	// Extraction of CI immediate
+	instHalf= 0b0000000001010100;
+	CI_imm = (instHalf>> 2) & 0x001F;
+	CI_imm |= ((instHalf>> 7) & 0x0020);
+	CI_imm = CI_imm | ((instHalf>> 12) ? 0xFFFFFFC0 : 0x00000000);
+
+	// CJ offset
+	CJ_imm =((instHalf>>= 2) & 0x1);
+	CJ_imm <<= 4;
+	CJ_imm = (CJ_imm | ((instHalf>> 3) & 0x00F)|
+					   ((instHalf>> 2) & 0x3F0));
+	CJ_imm = CJ_imm | ((instHalf>> 12) ? 0xFFFFF800 : 0X0);
+	CJ_imm <<= 1;
+	
+
+	if (opcode == 0x1)
+	{
+	
+		
+	}
+
+}
 
 void instDecExec(unsigned int instWord)
 {
@@ -71,12 +108,12 @@ void instDecExec(unsigned int instWord)
 
 	//Extraction of B immediate 
 	B_imm = ((instWord >> 7) & 0x1);
-	B_imm = (B_imm << 10);
+	B_imm = (B_imm << 10 );
 	B_imm = (B_imm | ((instWord >> 8) & 0x00F) |
 			((instWord >> 21) & 0x3F0) |
 			((instWord >> 20) & 0x800));
 	B_imm = B_imm | ((instWord >> 31) ? 0xFFFFF800 : 0x0);
-	B_imm = B_imm << 1;
+	B_imm = B_imm << 1; //multiplying by 2 
 
 	//Extraction of U immediate 
 	U_imm = ((instWord >> 12) & 0xFFFFF) | (((instWord >> 31) ? 0xFFF00000 : 0x0));
@@ -212,7 +249,6 @@ void instDecExec(unsigned int instWord)
 				break;
 			case 3:
 			{
-				// not tested yet
 				cout << "\tSLTIU\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
 				reg[rd].value = ((unsigned int)reg[rs1].value < I_imm) ? 1 : 0;
 			}
@@ -229,8 +265,7 @@ void instDecExec(unsigned int instWord)
 				{
 					I_imm = I_imm & 0x1F;
 					cout << "\tSRAI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
-					reg[rd].value = reg[rs1].value >> (unsigned int)I_imm;
-					// cout << dec << reg[rd] << "\n"; for debugging
+					reg[rd].value = reg[rs1].value >> (unsigned int)I_imm;				
 				}
 				else
 				{
@@ -495,16 +530,26 @@ int main(int argc, char *argv[])
 		if(!dataFile.read(/*a*/(char *)(memory + 0x00010000), curr)) 
 			emitError("Cannot read from data file\n");
 	}
-	//cout << a << endl; for debugging purposes
 
-	if(inFile.is_open())
+	//cout << a << endl; for debugging purposes
+	instWord = 0000000110000000;
+	unsigned int CJ_imm =((instWord >>= 2) & 0x1);
+	CJ_imm <<= 4;
+	CJ_imm = (CJ_imm | ((instWord >> 3) & 0x00F)|
+					   ((instWord >> 2) & 0x7E0));
+	CJ_imm = CJ_imm | ((instWord >> 12) ? 0xFFFFF800 : 0X0);
+	CJ_imm <<= 1;
+	bitset<12> x;
+	x = CJ_imm; 
+	cout << x << endl;
+	cout << dec << CJ_imm << endl; 
+
+	/*if(inFile.is_open())
 	{
 		int fsize = inFile.tellg();
 		inFile.seekg (0, inFile.beg);
 		if(!inFile.read((char *)memory, fsize)) 
 			emitError("Cannot read from input file\n");
-		
-	
 		
 		while(true)
 		{
@@ -515,10 +560,20 @@ int main(int argc, char *argv[])
 			pc += 4;
 
 			if (instWord == 0)
-                break;
+                break; 
+			else if((instWord & 0x00000003) != 3) // if compressed
+			{
+				pc -= 4;
+				instWord =  (unsigned char)memory[pc] |
+							(((unsigned char)memory[pc+1])<<8);
+				pc += 2;
+				Decompress(instWord);
+			}	
 			else 
+			{
 				instDecExec(instWord);
+			}
 		}
-	} else emitError("Cannot access input file\n");
+	} else emitError("Cannot access input file\n");*/
 }
 
