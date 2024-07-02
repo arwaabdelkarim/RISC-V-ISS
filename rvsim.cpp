@@ -498,12 +498,12 @@ void instDecExec(unsigned int instWord)
 	}
 }
 
-void Decompress(unsigned int insthalf)
+void Decompress(unsigned int instHalf)
 {
 
 // after decompressing the instruction halfword we will call the other function
 
-	instDecExec(insthalf);
+	instDecExec(instHalf);
 }
 
 
