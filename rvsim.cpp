@@ -227,7 +227,7 @@ void instDecExec(unsigned int instWord, bool compressed)
 				if (!compressed)
 					cout << "\tADDI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
 				if (rd == 0) return; // to keep reg zero unchanged
-				reg[rd].value = reg[rs1].value + I_imm;
+				reg[rd].value = reg[rs1].value + (int)I_imm;
 			}
 				break;
 			case 1:
@@ -549,9 +549,8 @@ void instDecExec(unsigned int instWord, bool compressed)
 void Decompress(unsigned int instHalf)
 {
 	unsigned int instWord = 0x0;
-	unsigned int opcode, rs2, rs1, rd, func4, rd_dash, rs1_dash, rs2_dash, offset, func3, func2, shamt;
-	unsigned int CJ_imm = 0x0, CI_imm = 0x0, CSS_imm = 0x0, CIW_imm = 0x0, CL_imm = 0x0, CS_imm = 0x0, CB_imm = 0x0, B_imm = 0x0;
-
+	unsigned int opcode, rs2, rs1, rd, func4, rd_dash, rs1_dash, rs2_dash, func3, func2, shamt;
+	unsigned int CJ_imm = 0x0, CI_imm = 0x0, CSS_imm = 0x0, CIW_imm = 0x0, CL_imm = 0x0, CS_imm = 0x0, CB_imm = 0x0, B_imm = 0x0, CJ_imm_D = 0x0;
 	unsigned int instPC = pc - 2;
 
 	printPrefix(instPC, instHalf);
@@ -566,23 +565,26 @@ void Decompress(unsigned int instHalf)
 	rd_dash = (instHalf >> 2) & 0x00000007;
 	rs2_dash = (instHalf >> 2) & 0x00000007;
 	rs1_dash = (instHalf >> 7) & 0x00000007;
-	rd_dash = rd_dash | 0x08;
-	rs2_dash = rs2_dash | 0x08;
-	rs1_dash = rs1_dash | 0x08;
-
-	// Extraction of CI immediate
-	instHalf = 0b0000000001010100;
-	CI_imm = (instHalf >> 2) & 0x001F;
-	CI_imm |= ((instHalf >> 7) & 0x0020);
-	CI_imm = CI_imm | ((instHalf >> 12) ? 0xFFFFFFC0 : 0x00000000);
+	rd_dash |= 0x08;
+	rs2_dash |= 0x08;
+	rs1_dash |= 0x08;
 
 	// CJ offset
-	CJ_imm = ((instHalf >>= 2) & 0x1);
-	CJ_imm <<= 4;
-	CJ_imm = (CJ_imm | ((instHalf >> 3) & 0x00F) |
-		((instHalf >> 2) & 0x3F0));
-	CJ_imm = CJ_imm | ((instHalf >> 12) ? 0xFFFFF800 : 0X0);
-	CJ_imm <<= 1;
+	CJ_imm = ((instHalf >> 2) & 0x1);
+	CJ_imm <<= 4; 
+	CJ_imm = CJ_imm | ((instHalf >> 3) & 0x007);
+	CJ_imm = CJ_imm | (instHalf & 0x040);
+	CJ_imm = CJ_imm | ((instHalf >> 2) & 0x020);
+	CJ_imm = CJ_imm | (instHalf & 0x200);
+	CJ_imm = CJ_imm | ((instHalf >> 2) & 0x180);
+	CJ_imm = CJ_imm | ((instHalf >> 8) & 0x008);
+	CJ_imm = CJ_imm | ((instHalf >> 2) & 0x400);
+	CJ_imm = CJ_imm | ((instHalf >> 12 & 0x01) ? 0xFFFFF800 : 0X0);
+
+	CJ_imm_D = ((CJ_imm & 0x3FF) << 9);
+	CJ_imm_D |= (CJ_imm  >> 11) & 0x0FF; 
+	CJ_imm_D |= ((CJ_imm >> 2) & 0x100); 
+	CJ_imm_D |= CJ_imm & 0x80000;
 
 	// CB offset
 	CB_imm = ((instHalf << 3) & 0x020) | ((instHalf >> 2) & 0x06) | ((instHalf << 1) & 0x0c0) | ((instHalf >> 7) & 0x018);
@@ -620,6 +622,58 @@ void Decompress(unsigned int instHalf)
 	{
 		switch (func3)
 		{
+			// c.nop
+			case 0:
+			{
+				if(rs1 == 0) // c.nop
+				{	
+					cout << "\tC.Nop\t" << "\n";
+					// set 32-bit instruction
+					instWord = 0x00000013;
+				}
+				// c.addi
+				else
+				{
+					CI_imm = (instHalf >> 2) & 0x001F;
+					CI_imm = CI_imm |(((instHalf >> 12) & 0x0001) << 5);
+					CI_imm |= (CI_imm & 0x0020) ? 0xFFFFFFC0 : 0x0;
+					cout<<"\tC.ADDI\t"<<reg[rs1].name<<"," << dec << (int)CI_imm << endl;
+
+					CI_imm = CI_imm << 20;
+
+					instWord = 0x13;
+					instWord = instWord | (rs1 << 7);
+					instWord = instWord | (0x0 <<12);
+					instWord = instWord | (rs1 <<15);
+					instWord = instWord | CI_imm;					
+				}
+			}
+				break;
+			// c.jal
+			case 1:
+			{
+				CJ_imm <<= 1;
+				cout << "\tC.JAL\t" << "0x" << hex << instPC + (int)CJ_imm << "\n";
+				//set immediate
+				instWord = CJ_imm_D << 12;
+				instWord |= 0x000000EF;	
+			}
+				break;
+			// c.li
+			case 2:
+			{
+				CI_imm = (instHalf >> 2) & 0x1F;
+				CI_imm |= ((instHalf >> 12) & 0x01);
+				CI_imm |= (((instHalf >> 12) & 0x01) ? 0xFFFFFFC0 : 0x0);
+				cout << "\tC.LI\t" << reg[rd].name << ", " << "0x" << hex  << (int)CI_imm << "\n";
+				// setting rd
+				instWord = rd << 7;
+				// setting immediate
+				instWord |= CI_imm << 20;
+				// setting base (rs1 - func3 - op)
+				instWord |= 0x00000013;
+			}
+				break;
 			case 3:
 			{
 				if (rd == 2) //addi16sp
@@ -685,6 +739,13 @@ void Decompress(unsigned int instHalf)
 					instWord |= (B_imm << 20) & 0xFFF00000;
 					cout << "\tC.ANDI\t" << reg[rs1_dash].name << hex << ", 0x" << int(B_imm) << "\n";
 				}
+			}
+				break;
+			case 5:
+			{	CJ_imm <<= 1;
+				cout << "\tC.J\t" << "0x" << hex << instPC + (int)CJ_imm << "\n";
+				instWord = CJ_imm_D << 12;
+				instWord |= 0x000000EF;
 			}
 				break;
 			case 6: // c.beqz
@@ -754,111 +815,12 @@ void Decompress(unsigned int instHalf)
 				cout << "\tC.LWSP\t" << reg[rd].name << hex << ", 0x" << (int)CI_imm << "\n";
 			}
 				break;
-		}
-	}
-	else cout << "\tunknown ??? instruction\n";
-
-	// after decompressing the instruction halfword we will call the other function to execute the instruction
-	instDecExec(instWord, 1);
-}
-
-void Decompress(unsigned int instHalf)
-{
-	unsigned int opcode, rs2, rs1, rd, func4, rd_dash, rs1_dash, rs2_dash, func3;
-	unsigned int CJ_imm = 0x0, CI_imm = 0x0, CSS_imm = 0x0, CIW_imm = 0x0, CL_imm = 0x0, CS_imm = 0x0, CB_imm = 0x0, CJ_imm_D = 0x0;
-	unsigned int instPC = pc - 2;
-	unsigned int instWord;
-
-	printPrefix(instPC, instHalf);
-	
-	opcode = instHalf & 0x00000003;
-	rs2 = (instHalf >> 2) & 0x0000001F;
-	rd = (instHalf>> 7) & 0x0000001F;
-	rs1 = (instHalf>> 7) & 0x0000001F;
-	func4 = (instHalf>> 12) & 0x0000000F;
-	func3 = (instHalf>> 13) & 0x00000007;
-	rd_dash = (instHalf>> 2) & 0x00000007;
-	rs2_dash = (instHalf>> 2) & 0x00000007;
-	rs1_dash = (instHalf>> 7) & 0x00000007;
-	rd_dash |= 0x08;
-	rs2_dash |= 0x08;
-	rs1_dash |= 0x08;
-
-	// CJ offset
-	CJ_imm = ((instHalf >> 2) & 0x1);
-	CJ_imm <<= 4; 
-	CJ_imm = CJ_imm | ((instHalf >> 3) & 0x007);
-	CJ_imm = CJ_imm | (instHalf & 0x040);
-	CJ_imm = CJ_imm | ((instHalf >> 2) & 0x020);
-	CJ_imm = CJ_imm | (instHalf & 0x200);
-	CJ_imm = CJ_imm | ((instHalf >> 2) & 0x180);
-	CJ_imm = CJ_imm | ((instHalf >> 8) & 0x008);
-	CJ_imm = CJ_imm | ((instHalf >> 2) & 0x400);
-	CJ_imm = CJ_imm | ((instHalf>> 12) ? 0xFFFFF800 : 0X0);
-	CJ_imm_D = ((CJ_imm & 0x3FF) << 9);
-	CJ_imm_D |= (CJ_imm  >> 11) & 0x0FF; 
-	CJ_imm_D |= ((CJ_imm >> 2) & 0x100); 
-	CJ_imm_D |= CJ_imm & 0x80000; 
-
-	if (opcode == 0x1)
-	{
-		switch(func3)
-		{
-			// c.nop
-			case 0:
-			{
-				cout << "\tC.Nop\t" << "\n";
-				// set 32-bit instruction
-				instWord = 0x00000013;
-			}
-				break;
-			// c.jal
-			case 1:
-			{
-				CJ_imm <<= 1;
-				cout << "\tC.JAL\t" << "0x" << hex << instPC + (int)CJ_imm << "\n";
-				//set immediate
-				instWord = CJ_imm_D << 12;
-				instWord |= 0x000000EF;	
-			}
-				break;
-			// c.li
-			case 2:
-			{
-				CI_imm = (instHalf >> 2) & 0x1F;
-				CI_imm |= ((instHalf >> 12) & 0x01);
-				CI_imm |= (((instHalf >> 12) & 0x01) ? 0xFFFFFFC0 : 0x0);
-				cout << "\tC.LI\t" << reg[rd].name << ", " << "0x" << hex  << (int)CI_imm << "\n";
-				// setting rd
-				instWord = rd << 7;
-				// setting immediate
-				instWord |= CI_imm << 20;
-				// setting base (rs1 - func3 - op)
-				instWord |= 0x00000013;
-			}
-				break;
-			// c.j
-			case 5:
-			{	CJ_imm <<= 1;
-				cout << "\tC.J\t" << "0x" << hex << instPC + (int)CJ_imm << "\n";
-				instWord = CJ_imm_D << 12;
-				instWord |= 0x000000EF;
-			}
-				break;
-			
-		}
-
-	}
-	else if (opcode == 0x2)
-	{
-		switch(func3)
-		{
 			case 4:
 			{
 				// c.jr
 				if (func4 == 0x8 && rs2 == 0x0)
 				{
-				    cout << "\tC.JR\t" << reg[rs1].name << "\n";
+					cout << "\tC.JR\t" << reg[rs1].name << "\n";
 					// adding rs1
 					instWord = rs1 << 15;
 					// setting base (fn - op - rd - imm)
@@ -899,12 +861,10 @@ void Decompress(unsigned int instHalf)
 				}
 			}
 				break;
-		}		
+		}
 	}
-	else 
-	{
-		cout << "\tUnsupported Compressed Function\n";
-	}
+	else cout << "\tUnsupported Compressed Function\n";
+	// after decompressing the instruction halfword we will call the other function to execute the instruction
 	instDecExec(instWord, 1);
 }
 
@@ -919,8 +879,7 @@ int main(int argc, char *argv[])
 	// char *a = new char; for debugging purposes
 
 	if(argc<2) 
-		emitError("use: rvcdiss <machine_code_file_name>\n");
-
+		emitError("use: .\rvsim.exe <machine_code_file_name>\n");
 
 	inFile.open(argv[1], ios::in | ios::binary | ios::ate);
 
@@ -939,7 +898,6 @@ int main(int argc, char *argv[])
 			emitError("Cannot read from data file\n");
 	}
 
-
 	if(inFile.is_open())
 	{
 		int fsize = inFile.tellg();
@@ -953,20 +911,20 @@ int main(int argc, char *argv[])
 						(((unsigned char)memory[pc+1])<<8);
 						
 			pc += 2;
-
 			if (instWord == 0)
                 break;
 		    else if((instWord & 0x0003) == 0x3) // if decompressed
 			{
 				instWord = instWord | (((unsigned char)memory[pc])<<16) |
+			              		      (((unsigned char)memory[pc+1])<<24);
 			              			  (((unsigned char)memory[pc+1])<<24);
 				pc += 2;
 				instDecExec(instWord, 0);
 			}	
 			else
-			    // Decompress(instWord);
-				cout << "Compressed Instructions are not supported\n";
+			    Decompress(instWord);
 		}
+
 		
 		printRegisterContents();
 	} else emitError("Cannot access input file\n");
