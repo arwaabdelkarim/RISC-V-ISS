@@ -675,7 +675,7 @@ void Decompress(unsigned int instHalf)
 					CI_imm = (instHalf >> 2) & 0x001F;
 					CI_imm = CI_imm |(((instHalf >> 12) & 0x0001) << 5);
 					CI_imm = CI_imm << 12;
-					CI_imm |= (CI_imm & 0x020000) ? 0xFFC0000 : 0x0;
+					CI_imm |= (CI_imm & 0x020000) ? 0xFFFFFFC0000 : 0x0;
 
 					// opcode
 					instWord = 0x37;
@@ -698,7 +698,7 @@ void Decompress(unsigned int instHalf)
 				{
 					CI_imm = (instHalf >> 2) & 0x001F;
 					CI_imm = CI_imm |(((instHalf >> 12) & 0x0001) << 5);
-					CI_imm |= (CI_imm & 0x0020) ? 0xFFC0 : 0x0;
+					CI_imm |= (CI_imm & 0x0020) ? 0xFFFFFFC0 : 0x0;
 					cout<<"\tC.ADDI\t"<<reg[rs1].name<<","<< CI_imm << endl;
 
 					CI_imm = CI_imm << 20;
