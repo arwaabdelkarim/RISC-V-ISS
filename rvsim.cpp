@@ -49,54 +49,16 @@ int mem_to_reg(int ad, int i) {
 	return x;
 }
 
-unsigned int Decompress(unsigned int instHalf)
-{
-	unsigned int opcode, rs2, rs1, rd, func4, rd_dash, rs1_dash, rs2_dash, offset, func3;
-	unsigned int CJ_imm = 0x0, CI_imm = 0x0, CSS_imm = 0x0, CIW_imm = 0x0, CL_imm = 0x0, CS_imm = 0x0, CB_imm = 0x0;
-	
-	opcode = instHalf & 0x00000003;
-	rs2 = (instHalf >> 2) & 0x0000001F;
-	rd = (instHalf>> 7) & 0x0000001F;
-	rs1 = (instHalf>> 7) & 0x0000001F;
-	func4 = (instHalf>> 12) & 0x0000000F;
-	func3 = (instHalf>> 13) & 0x00000007;
-	rd_dash = (instHalf>> 2) & 0x00000007;
-	rs2_dash = (instHalf>> 2) & 0x00000007;
-	rs1_dash = (instHalf>> 7) & 0x00000007;
 
-	// Extraction of CI immediate
-	instHalf= 0b0000000001010100;
-	CI_imm = (instHalf>> 2) & 0x001F;
-	CI_imm |= ((instHalf>> 7) & 0x0020);
-	CI_imm = CI_imm | ((instHalf>> 12) ? 0xFFFFFFC0 : 0x00000000);
 
-	// CJ offset
-	CJ_imm =((instHalf>>= 2) & 0x1);
-	CJ_imm <<= 4;
-	CJ_imm = (CJ_imm | ((instHalf>> 3) & 0x00F)|
-					   ((instHalf>> 2) & 0x3F0));
-	CJ_imm = CJ_imm | ((instHalf>> 12) ? 0xFFFFF800 : 0X0);
-	CJ_imm <<= 1;
-	
-
-	if (opcode == 0x1)
-	{
-	
-		
-	}
-
-	// after decompressing the instruction halfword we will call the other function to execute the instruction
-	instDecExec(instHalf);
-}
-
-void instDecExec(unsigned int instWord)
+void instDecExec(unsigned int instWord, bool compressed)
 {
 	unsigned int rd, rs1, rs2, funct3, funct7, opcode;
 	unsigned int I_imm = 0x0, S_imm = 0x0, B_imm = 0x0, U_imm = 0x0, J_imm = 0x0, J_temp = 0x0, temp;
 	unsigned int address;
 	unsigned int instPC = pc - 4;
 
-	printPrefix(instPC, instWord);
+	if(!compressed) printPrefix(instPC, instWord);
 
 	opcode = instWord & 0x0000007F;
 	rd = (instWord >> 7) & 0x0000001F;
@@ -130,18 +92,11 @@ void instDecExec(unsigned int instWord)
 		((instWord >> 31) ? 0xFFFFF800 : 0x0);
 
 	//Extraction of J immediate 
-	J_temp = (instWord >> 20) & 0x000003FF;
-	J_temp = J_temp << 1;
-	J_imm = J_imm | J_temp;
-	J_temp = (instWord >> 19) & 0x00000001;
-	J_temp = J_temp << 11;
-	J_imm = J_imm | J_temp;
-	J_temp = (instWord >> 12) & 0x000000FF;
-	J_temp = J_temp << 12;
-	J_imm = J_imm | J_temp;
-	J_temp = (instWord >> 31) & 0x00000001;
-	J_temp = J_temp << 20;
-	J_imm = J_imm | J_temp;
+	J_imm = ((instWord >> 31 & 0x1) << 20) |
+		((instWord >> 21 & 0x3FF) << 1) |
+		((instWord >> 20 & 0x1) << 11) |
+		((instWord >> 12 & 0xFF) << 12);
+	J_imm |= (((instWord >> 31) ? 0xFFF00000 : 0x0));
 
 	J_imm |= (((instWord >> 31) ? 0xFFF00000 : 0x0));
 
@@ -154,13 +109,13 @@ void instDecExec(unsigned int instWord)
 			{
 				if (funct7 == 32)
 				{
-					cout << "\tSUB\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
+					if(!compressed) cout << "\tSUB\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
 					if (rd == 0) return; // to keep reg zero unchanged
 					reg[rd].value = reg[rs1].value - reg[rs2].value;
 				}
 				else
 				{
-					cout << "\tADD\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
+					if (!compressed) cout << "\tADD\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
 					if (rd == 0) return; // to keep reg zero unchanged
 					reg[rd].value = reg[rs1].value + reg[rs2].value;
 				}
@@ -169,7 +124,7 @@ void instDecExec(unsigned int instWord)
 
 			case 1: 
 			{
-				cout << "\tSLL\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
+				if (!compressed) cout << "\tSLL\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
 				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = reg[rs1].value << reg[rs2].value;
 			}
@@ -177,14 +132,14 @@ void instDecExec(unsigned int instWord)
 
 			case 2: 
 			{
-				cout << "\tSLT\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
+				if (!compressed) cout << "\tSLT\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
 				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = (reg[rs1].value < reg[rs2].value) ? 1 : 0;
 			}
 				break;
 			case 3: 
 			{
-				cout << "\tSLTU\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
+				if (!compressed) cout << "\tSLTU\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
 				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = ((unsigned int)reg[rs1].value < (unsigned int)reg[rs2].value) ? 1 : 0;
 			}
@@ -192,7 +147,7 @@ void instDecExec(unsigned int instWord)
 
 			case 4: 
 			{
-				cout << "\tXOR\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
+				if (!compressed) cout << "\tXOR\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
 				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = reg[rs1].value ^ reg[rs2].value;
 			}
@@ -202,13 +157,13 @@ void instDecExec(unsigned int instWord)
 			{
 				if (funct7 == 32)
 				{
-					cout << "\tSRA\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
+					if (!compressed) cout << "\tSRA\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
 					if (rd == 0) return; // to keep reg zero unchanged
 					reg[rd].value = reg[rs1].value >> reg[rs2].value;
 				}
 				else
 				{
-					cout << "\tSRL\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
+					if (!compressed) cout << "\tSRL\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
 					if (rd == 0) return; // to keep reg zero unchanged
 					reg[rd].value = (unsigned int)reg[rs1].value >> reg[rs2].value;
 				}
@@ -216,20 +171,20 @@ void instDecExec(unsigned int instWord)
 				break;
 			case 6: 
 			{
-				cout << "\tOR\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
+				if (!compressed) cout << "\tOR\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
 				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = reg[rs1].value | reg[rs2].value;
 			}
 				break;
 			case 7: 
 			{
-				cout << "\tAND\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
+				if (!compressed) cout << "\tAND\t" << reg[rd].name << "," << reg[rs1].name << "," << reg[rs2].name << "\n";
 				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = reg[rs1].value & reg[rs2].value;
 			}
 				break;
 		
-			default: cout << "\tUnkown R Instruction \n";
+			default: if (!compressed) cout << "\tUnkown R Instruction \n";
 		}
 	}
 
@@ -240,14 +195,14 @@ void instDecExec(unsigned int instWord)
 		{
 			case 0:
 			{
-				cout << "\tADDI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+				if (!compressed) cout << "\tADDI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
 				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = reg[rs1].value + I_imm;
 			}
 				break;
 			case 1:
 			{
-				cout << "\tSLLI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+				if (!compressed) cout << "\tSLLI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
 				if (rd == 0) return; // to keep reg zero unchanged
 				I_imm = I_imm & 0x1F;
 				reg[rd].value = reg[rs1].value << (unsigned int)I_imm;
@@ -256,21 +211,21 @@ void instDecExec(unsigned int instWord)
 			case 2:
 			{
 				// not tested yet
-				cout << "\tSLTI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+				if (!compressed) cout << "\tSLTI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
 				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = (reg[rs1].value < I_imm) ? 1 : 0;
 			}
 				break;
 			case 3:
 			{
-				cout << "\tSLTIU\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+				if (!compressed) cout << "\tSLTIU\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
 				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = ((unsigned int)reg[rs1].value < I_imm) ? 1 : 0;
 			}
 				break;
 			case 4:
 			{
-				cout << "\tXORI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+				if (!compressed) cout << "\tXORI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
 				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = reg[rs1].value ^ I_imm;
 			}
@@ -280,7 +235,7 @@ void instDecExec(unsigned int instWord)
 				if (funct7 == 0x20)
 				{
 					I_imm = I_imm & 0x1F;
-					cout << "\tSRAI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+					if (!compressed) cout << "\tSRAI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
 					if (rd == 0) return; // to keep reg zero unchanged
 					reg[rd].value = reg[rs1].value >> (unsigned int)I_imm;
 					// cout << dec << reg[rd] << "\n"; for debugging
@@ -288,7 +243,7 @@ void instDecExec(unsigned int instWord)
 				else
 				{
 					I_imm = I_imm & 0x1F;
-					cout << "\tSRLI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+					if (!compressed) cout << "\tSRLI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
 					if (rd == 0) return; // to keep reg zero unchanged
 					reg[rd].value = (unsigned int)reg[rs1].value >> (unsigned int)I_imm;
 				}
@@ -296,20 +251,20 @@ void instDecExec(unsigned int instWord)
 				break;
 			case 6:
 			{
-				cout << "\tORI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+				if (!compressed) cout << "\tORI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
 				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = reg[rs1].value | I_imm;
 			}
 				break;
 			case 7:
 			{
-				cout << "\tANDI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
+				if (!compressed) cout << "\tANDI\t" << reg[rd].name << ", " << reg[rs1].name << ", " << dec << (int)I_imm << "\n";
 				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = reg[rs1].value & I_imm;
 			}
 				break;
 			default:
-				cout << "\tUnkown I Instruction \n";
+				if (!compressed) cout << "\tUnkown I Instruction \n";
 		}
 	}
 
@@ -322,7 +277,7 @@ void instDecExec(unsigned int instWord)
 		{
 			case 0: 
 			{
-				cout << "\tLB\t" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
+				if (!compressed) cout << "\tLB\t" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
 				if (rd == 0) return; // to keep reg zero unchanged
 				temp = memory[ad];
 				// sign extending
@@ -332,7 +287,7 @@ void instDecExec(unsigned int instWord)
 
 			case 1:	
 			{
-				cout << "\tLH\tx" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
+				if (!compressed) cout << "\tLH\tx" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
 				if (rd == 0) return; // to keep reg zero unchanged
 				temp = mem_to_reg(ad, 1);
 				// sign extending
@@ -342,7 +297,7 @@ void instDecExec(unsigned int instWord)
 
 			case 2:	
 			{
-				cout << "\tLW\tx" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
+				if (!compressed) cout << "\tLW\tx" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
 				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = mem_to_reg(ad, 3);
 			}
@@ -350,7 +305,7 @@ void instDecExec(unsigned int instWord)
 
 			case 4:	
 			{
-				cout << "\tLBU\tx" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
+				if (!compressed) cout << "\tLBU\tx" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
 				if (rd == 0) return; // to keep reg zero unchanged
 				// automatically zero extended because memory is unsigned char
 				reg[rd].value = memory[ad];
@@ -359,14 +314,14 @@ void instDecExec(unsigned int instWord)
 
 			case 5:	
 			{
-				cout << "\tLHU\tx" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
+				if (!compressed) cout << "\tLHU\tx" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
 				if (rd == 0) return; // to keep reg zero unchanged
 				reg[rd].value = mem_to_reg(ad, 1);
 			}
 				break;
 
 			default:
-				cout << "\tUnkown I-Load Instruction \n";
+				if (!compressed) cout << "\tUnkown I-Load Instruction \n";
 		}
 	}
   
@@ -379,7 +334,7 @@ void instDecExec(unsigned int instWord)
 		{
 			case 0:	
 			{
-				cout << "\tSB\t" << reg[rs2].name << ", " << dec << (int)S_imm << "(" << reg[rs1].name << ")\n";
+				if (!compressed) cout << "\tSB\t" << reg[rs2].name << ", " << dec << (int)S_imm << "(" << reg[rs1].name << ")\n";
 				// the memory address gets the LS byte in reg[rs2]
 				memory[ad] = reg[rs2].value; 
 			}
@@ -387,7 +342,7 @@ void instDecExec(unsigned int instWord)
 
 			case 1:	
 			{
-				cout << "\tSH\t" << reg[rs2].name << ", " << dec << (int)S_imm << "(" << reg[rs1].name << ")\n";
+				if (!compressed) cout << "\tSH\t" << reg[rs2].name << ", " << dec << (int)S_imm << "(" << reg[rs1].name << ")\n";
 				memory[ad] = reg[rs2].value;
 				memory[ad + 1] = reg[rs2].value >> 8;
 			}
@@ -395,7 +350,7 @@ void instDecExec(unsigned int instWord)
 
 			case 2: 
 			{
-				cout << "\tSW\t" << reg[rs2].name << ", " << dec << (int)S_imm << "(" << reg[rs1].name << ")\n";
+				if (!compressed) cout << "\tSW\t" << reg[rs2].name << ", " << dec << (int)S_imm << "(" << reg[rs1].name << ")\n";
 				memory[ad] = reg[rs2].value;
 				memory[ad + 1] = reg[rs2].value >> 8;
 				memory[ad + 2] = reg[rs2].value >> 16;
@@ -404,7 +359,7 @@ void instDecExec(unsigned int instWord)
 				break;
 
 			default:
-				cout << "\tUnkown S Instruction \n";
+				if (!compressed) cout << "\tUnkown S Instruction \n";
 		}
 
 	}
@@ -416,21 +371,21 @@ void instDecExec(unsigned int instWord)
 		{
 			case 0:
 			{
-				cout << "\tBEQ\t" << reg[rs1].name << "," << reg[rs2].name << "," << hex << "0x" << instPC + (int)B_imm << "\n";
+				if (!compressed) cout << "\tBEQ\t" << reg[rs1].name << "," << reg[rs2].name << "," << hex << "0x" << instPC + (int)B_imm << "\n";
 				pc = (reg[rs1].value == reg[rs2].value) ? instPC + (int)B_imm : pc;
 			}
 				break;
 
 			case 1:
 			{
-				cout << "\tBNE\t" << reg[rs1].name << "," << reg[rs2].name << "," << hex << "0x" << instPC + (int)B_imm << "\n";
+				if (!compressed) cout << "\tBNE\t" << reg[rs1].name << "," << reg[rs2].name << "," << hex << "0x" << instPC + (int)B_imm << "\n";
 				pc = (reg[rs1].value != reg[rs2].value) ? instPC + (int)B_imm : pc;
 			}
 				break;
 
 			case 4:
 			{
-				cout << "\tBLT\t" << reg[rs1].name << ", " << reg[rs2].name << ", " << hex << "0x" << instPC + (int)B_imm << "\n";
+				if (!compressed) cout << "\tBLT\t" << reg[rs1].name << ", " << reg[rs2].name << ", " << hex << "0x" << instPC + (int)B_imm << "\n";
 				if (reg[rs1].value < reg[rs2].value)
 					pc = instPC + (int)B_imm;	
 			}
@@ -438,7 +393,7 @@ void instDecExec(unsigned int instWord)
 
 			case 5:
 			{
-				cout << "\tBGE\t" << reg[rs1].name << ", " << reg[rs2].name << ", " << hex << "0x" << instPC + (int)B_imm << "\n";
+				if (!compressed) cout << "\tBGE\t" << reg[rs1].name << ", " << reg[rs2].name << ", " << hex << "0x" << instPC + (int)B_imm << "\n";
 				if (reg[rs1].value >= reg[rs2].value)
 					pc = instPC + (int)B_imm;
 			}
@@ -446,27 +401,27 @@ void instDecExec(unsigned int instWord)
 
 			case 6:
 			{
-				cout << "\tBLTU\t" << reg[rs1].name << ", " << reg[rs2].name << ", 0x" << hex << (instPC + B_imm) << "\n";
+				if (!compressed) cout << "\tBLTU\t" << reg[rs1].name << ", " << reg[rs2].name << ", 0x" << hex << (instPC + B_imm) << "\n";
 				if ((unsigned int)reg[rs1].value < (unsigned int)reg[rs2].value) pc = instPC + (int)B_imm;
 			}
 				break;
 
 			case 7:
 			{
-				cout << "\tBGEU\t" << reg[rs1].name << ", " << reg[rs2].name << ", 0x" << hex << (instPC + B_imm) << "\n";
+				if (!compressed) cout << "\tBGEU\t" << reg[rs1].name << ", " << reg[rs2].name << ", 0x" << hex << (instPC + B_imm) << "\n";
 				if ((unsigned int)reg[rs1].value >= (unsigned int)reg[rs2].value) pc = instPC + (int)B_imm;
 			}
 				break;
 
 			default:
-				cout << "\tUnkown B Instruction \n";
+				if (!compressed) cout << "\tUnkown B Instruction \n";
 		}
 	}
 
 	// U instructions 
 	else if (opcode == 0x37) 
 	{
-		cout << "\tLUI\t" << reg[rd].name << ", " << dec << ((int)U_imm) << "\n";
+		if (!compressed) cout << "\tLUI\t" << reg[rd].name << ", " << dec << ((int)U_imm) << "\n";
 		if (rd == 0) return; // to keep reg zero unchanged
 		U_imm <<= 12;  //shifting 12 bits to the right to load to upper 20 bits in rd
 		reg[rd].value = (int)U_imm;
@@ -475,7 +430,7 @@ void instDecExec(unsigned int instWord)
 	else if (opcode == 0x17) 
 	{
 
-		cout << "\tAUIPC\t" << reg[rd].name << ", " << dec << ((int)U_imm) << "\n";
+		if (!compressed) cout << "\tAUIPC\t" << reg[rd].name << ", " << dec << ((int)U_imm) << "\n";
 		if (rd == 0) return; // to keep reg zero unchanged
 
 
@@ -487,25 +442,25 @@ void instDecExec(unsigned int instWord)
 	// J instructions
 	else if (opcode == 0x6F)
 	{
-		cout << "\tJAL\t" << reg[rd].name << "," << hex << "0x" << instPC + (int)J_imm << "\n";
+		if (!compressed) cout << "\tJAL\t" << reg[rd].name << "," << hex << "0x" << instPC + (int)J_imm << "\n";
+		if (rd != 0) reg[rd].value = pc; // to keep reg zero unchanged
 		pc = instPC + J_imm;
-		if (rd == 0) return; // to keep reg zero unchanged
-		reg[rd].value = pc;
+		
 	}
 	else if (opcode == 0x67)
 	{
-		cout << "\tJALR\t" << reg[rd].name << "," << reg[rs1].name << "," << hex << "0x" << reg[rs1].value + (int)I_imm << "\n";
+		if (!compressed) cout << "\tJALR\t" << reg[rd].name << "," << reg[rs1].name << "," << hex << "0x" << reg[rs1].value + (int)I_imm << "\n";
+		if (rd != 0) reg[rd].value = pc;
 		pc = reg[rs1].value + (int)I_imm;
-		if (rd == 0) return; // to keep reg zero unchanged
-		reg[rd].value = pc;
+		 // to keep reg zero unchanged
+		
 	}
   
 	// Ecall instruction
 	else if (opcode == 0x73)
 	{
-		cout << "\tECALL\n";
 		if (reg[17].value == 1)  // a7 = 1
-			cout << dec << reg[10].value << '\n';
+			cout << "\tECALL (INT):\t" << dec << reg[10].value << '\n';
 
 		else if (reg[17].value == 4)
 		{
@@ -519,10 +474,11 @@ void instDecExec(unsigned int instWord)
 				ad++;
 				c = memory[ad];
 			}
-			cout << output <<'\n';
+			cout << "\tECALL (STR):\t" << output <<'\n';
 		}
 		else if (reg[17].value == 10)
 		{
+			cout << "\tECALL (Exit)\n";
 			exit(0);
 		}
 		else
@@ -532,8 +488,223 @@ void instDecExec(unsigned int instWord)
 	}
 	else
 	{
-		cout << "\tUnkown Instruction \n";
+		if (!compressed)cout << "\tUnkown Instruction \n";
 	}
+}
+
+void Decompress(unsigned int instHalf)
+{
+	unsigned int instWord = 0x0;
+	unsigned int opcode, rs2, rs1, rd, func4, rd_dash, rs1_dash, rs2_dash, offset, func3, func2, shamt;
+	unsigned int CJ_imm = 0x0, CI_imm = 0x0, CSS_imm = 0x0, CIW_imm = 0x0, CL_imm = 0x0, CS_imm = 0x0, CB_imm = 0x0, B_imm = 0x0;
+
+	unsigned int instPC = pc - 2;
+
+	printPrefix(instPC, instHalf);
+
+	opcode = instHalf & 0x00000003;
+	rs2 = (instHalf >> 2) & 0x0000001F;
+	rd = (instHalf >> 7) & 0x0000001F;
+	rs1 = (instHalf >> 7) & 0x0000001F;
+	func4 = (instHalf >> 12) & 0x0000000F;
+	func3 = (instHalf >> 13) & 0x00000007;
+	func2 = (instHalf >> 10) & 0x03;
+	rd_dash = (instHalf >> 2) & 0x00000007;
+	rs2_dash = (instHalf >> 2) & 0x00000007;
+	rs1_dash = (instHalf >> 7) & 0x00000007;
+	rd_dash = rd_dash | 0x08;
+	rs2_dash = rs2_dash | 0x08;
+	rs1_dash = rs1_dash | 0x08;
+
+	// Extraction of CI immediate
+	instHalf = 0b0000000001010100;
+	CI_imm = (instHalf >> 2) & 0x001F;
+	CI_imm |= ((instHalf >> 7) & 0x0020);
+	CI_imm = CI_imm | ((instHalf >> 12) ? 0xFFFFFFC0 : 0x00000000);
+
+	// CJ offset
+	CJ_imm = ((instHalf >>= 2) & 0x1);
+	CJ_imm <<= 4;
+	CJ_imm = (CJ_imm | ((instHalf >> 3) & 0x00F) |
+		((instHalf >> 2) & 0x3F0));
+	CJ_imm = CJ_imm | ((instHalf >> 12) ? 0xFFFFF800 : 0X0);
+	CJ_imm <<= 1;
+
+	// CB offset
+	CB_imm = ((instHalf << 3) & 0x020) | ((instHalf >> 2) & 0x06) | ((instHalf << 1) & 0x0c0) | ((instHalf >> 7) & 0x018);
+	CB_imm |= ((instHalf) & 0x01000) ? 0xFFFFFF00 : 0x0;
+
+	// Shift amount, shamt[5] is 0 for rv32C
+	shamt = ((instHalf >> 2) & (0x01F));
+
+	if (opcode == 0x0)
+	{
+		switch (func3)
+		{
+			case 0: // c.addi4spn
+			{
+				// setting the base (opcode -- fn3 -- x2)
+				instWord = 0x00010413;
+				// adding rd'
+				instWord |= ((instHalf << 5) & 0x0380);
+				// extract the immediate and make it start at position 0 !!
+				// non-zero unsigned immediate scaled by 4
+				CI_imm = 0x0;
+				CI_imm |= ((instHalf >> 2) & 0x08) |
+					((instHalf >> 4) & 0x04) |
+					((instHalf >> 1) & 0x03C0) |
+					((instHalf >> 7) & 0x030);
+				// adding the immediate
+				instWord |= ((CI_imm << 20) & 0xFFF00000);
+				cout << "\tC.ADDI4SPN\t" << reg[rd_dash].name << hex << ", 0x" << (int)CI_imm << "\n";
+			}
+				break;
+		}
+	}
+	else if (opcode == 0x1)
+	{
+		switch (func3)
+		{
+			case 3:
+			{
+				if (rd == 2) //addi16sp
+				{
+					// adding the base (opcode -- rd -- funct3 -- rs1 )
+					instWord = 0x00010113;
+					// extracting the immediate
+					CI_imm = 0x0;
+					CI_imm |= ((instHalf << 3) & 0x020) |
+						((instHalf << 4) & 0x0180) |
+						((instHalf << 1) & 0x020) |
+						((instHalf >> 2) & 0x010) |
+						((instHalf & 0x01000) ? 0xFFFFFE00 : 0x0);
+					// adding the immediate
+					instWord |= ((CI_imm << 20) & 0xFFF00000);
+					cout << "\tC.ADDI16SP\t" << hex << "0x" << int(CI_imm) << '\n';
+
+				}
+				else // lui
+				{
+
+				}
+			}
+				break;
+			case 4:
+			{
+				if (func2 == 0) // c.srli
+				{
+					// setting the base (opcode -- fn3 -- fn2)
+					instWord = 0x00045413;
+					// adding rd'
+					instWord |= instHalf & 0x0380;
+					// adding rs1'
+					instWord |= ((instHalf << 8) & 0x038000);
+					// adding shamt
+					instWord |= ((shamt << 20) & 0x01F00000);
+
+					cout << "\tC.SRLI\t" << reg[rs1_dash].name << hex << ", 0x" << int(shamt) << "\n";
+				}
+				else if (func2 == 1) //c.srai
+				{
+					// setting the base (opcode -- fn3 -- fn2)
+					instWord = 0x40045413;
+					// adding rd'
+					instWord |= instHalf & 0x0380;
+					// adding rs1'
+					instWord |= ((instHalf << 8) & 0x038000);
+					// adding shamt
+					instWord |= (shamt << 20) & 0x01F00000;
+					cout << "\tC.SRAI\t" << reg[rs1_dash].name << hex << ", 0x" << int(shamt) << "\n";
+				}
+				else // c.andi
+				{
+					// setting the base (opcode -- fn3 -- fn2)
+					instWord = 0x00087813;
+					// adding rd'
+					instWord |= instHalf & 0x380;
+					// adding rs1'
+					instWord |= ((instHalf << 8) & 0x038000);
+					// special immediate for andi
+					B_imm = shamt | (((instHalf >> 7) & 0x020) ? 0xFFFFFFE0 : 0x0);
+					// adding the immediate
+					instWord |= (B_imm << 20) & 0xFFF00000;
+					cout << "\tC.ANDI\t" << reg[rs1_dash].name << hex << ", 0x" << int(B_imm) << "\n";
+				}
+			}
+				break;
+			case 6: // c.beqz
+			{
+				// setting the base (opcode -- rs2 -- funct3)
+				instWord = 0x00040063;
+				// adding rs1'
+				instWord |= ((instHalf << 8) & 0x038000);
+				// adding the immediate
+				instWord |= ((CB_imm >> 4) & 0x080) |
+					((CB_imm << 7) & 0x0F00) |
+					((CB_imm << 20) & 0x7e000000) |
+					((CB_imm << 19) & 0x80000000);
+
+				cout << "\tC.BEQZ\t" << reg[rs1_dash].name << hex << ", 0x" << int(instPC + CB_imm) << "\n";
+			}
+				break;
+			case 7: // c.bnez
+			{
+				// setting the base (opcode -- rs2 -- funct3)
+				instWord = 0x00041063;
+				// adding rs1'
+				instWord |= ((instHalf << 8) & 0x038000);
+				// adding the immediate
+				instWord |= ((CB_imm >> 4) & 0x080) |
+					((CB_imm << 7) & 0x0F00) |
+					((CB_imm << 20) & 0x7e000000) |
+					((CB_imm << 19) & 0x80000000);
+				cout << "\tC.BNEZ\t" << reg[rs1_dash].name << hex << ", 0x" << int(instPC + CB_imm) << "\n";
+			}
+				break;
+		// place holder for now
+			default: cout << "\tunknown ??? instruction\n";
+		}
+
+	}
+	else if (opcode == 0x2)
+	{
+		switch (func3)
+		{
+			case 0: // c.slli
+			{
+				// setting the base (opcode -- fn3 -- fn2)
+				instWord = 0x00001013;
+				// adding rd
+				instWord |= instHalf & 0xF80;
+				// adding rs1
+				instWord |= ((instHalf << 8) & 0x0F8000);
+				// adding shamt
+				instWord |= (shamt << 20) & 0x01F00000;
+
+				cout << "\tC.SLLI\t" << reg[rs1].name << hex << ", 0x" << int(shamt) << "\n";
+			}
+				break;
+			case 2: // c.lwsp
+			{
+				// setting the base (opcode -- rd -- fn3)
+				instWord = 0x00012003;
+			 	// extracting the immediate
+				CI_imm = 0x0;
+				CI_imm = ((instHalf << 4) & 0x0C0) |
+					((instHalf >> 2) & 0x01C) |
+					((instHalf >> 7) & 0x020);
+				// adding the immediate
+				instWord |= ((CI_imm << 20) & 0xFFF00000);
+
+				cout << "\tC.LWSP\t" << reg[rd].name << hex << ", 0x" << (int)CI_imm << "\n";
+			}
+				break;
+		}
+	}
+	else cout << "\tunknown ??? instruction\n";
+
+	// after decompressing the instruction halfword we will call the other function to execute the instruction
+	instDecExec(instWord, 1);
 }
 
 int main(int argc, char *argv[])
@@ -601,7 +772,7 @@ int main(int argc, char *argv[])
 				instWord = instWord | (((unsigned char)memory[pc])<<16) |
 			               (((unsigned char)memory[pc+1])<<24);
 				pc += 2;
-				instDecExec(instWord);
+				instDecExec(instWord, 0);
 			}	
 			else
 			    Decompress(instWord);
