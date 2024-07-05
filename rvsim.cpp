@@ -497,7 +497,7 @@ void instDecExec(unsigned int instWord, bool compressed)
 	}
 	else if (opcode == 0x67)
 	{
-		if (!compressed) cout << "\tJALR\t" << reg[rd].name << "," << reg[rs1].name << "," << hex << "0x" << reg[rs1].value + (int)I_imm << "\n";
+		if (!compressed) cout << "\tJALR\t" << reg[rd].name << "," << reg[rs1].name << "," << hex << "0x" << (int)I_imm << "\n";
 		if (rd != 0) reg[rd].value = pc;
 		pc = reg[rs1].value + (int)I_imm;
 		 // to keep reg zero unchanged
@@ -678,105 +678,6 @@ void Decompress(unsigned int instHalf)
 	}
 	else if (opcode == 0x1)
 	{
-    
-    // figure this out
-    switch (func)
-		{
-			case 0:
-			{
-				// c.sub
-				if(func6 == 0x23)
-				{
-					// opcode
-					instWord = 0x33;
-					// rd
-					instWord = instWord | (rs1_dash << 7);
-					// fucntion 3
-					instWord = instWord | (0x0 << 12);
-					// rs1
-					instWord = instWord | (rs1_dash << 15);
-					// rs2
-					instWord = instWord | (rs2_dash << 20);
-					// function 7
-					instWord = instWord | (0x20 << 25);
-
-					cout<<"\tC.SUB\t"<<reg[rs1_dash].name<<","<< reg[rs2_dash].name << endl;
-				}
-
-					
-			}
-				break;	
-
-			case 1:
-			{
-				// c.xor
-				if(func6 == 0x23)
-				{
-					// opcode
-					instWord = 0x33;
-					// rd
-					instWord = instWord | (rs1_dash << 7);
-					// function 3
-					instWord = instWord | (0x4 << 12);
-					// rs1
-					instWord = instWord | (rs1_dash << 15);
-					// rs2
-					instWord = instWord | (rs2_dash << 20);
-					// function 7
-					instWord = instWord | (0x00 << 25);
-
-					cout<<"\tC.XOR\t"<<reg[rs1_dash].name<<","<< reg[rs2_dash].name << endl;
-				}
-			}
-				break;
-
-			case 2:
-			{
-				// c.or
-				if(func6 == 0x23)
-				{
-					// opcode
-					instWord = 0x33;
-					// rd
-					instWord = instWord | (rs1_dash << 7);
-					// function 3
-					instWord = instWord | (0x6 << 12);
-					// rs1
-					instWord = instWord | (rs1_dash << 15);
-					// rs2
-					instWord = instWord | (rs2_dash << 20);
-					// function 7
-					instWord = instWord | (0x00 << 25);
-
-					cout<<"\tC.OR\t"<<reg[rs1_dash].name<<","<< reg[rs2_dash].name << endl;
-				}
-			}
-				break;
-
-			case 3:
-			{
-				// c.and
-				if(func6 == 0x23)
-				{
-					// opcode
-					instWord = 0x33;
-					// rd
-					instWord = instWord | (rs1_dash << 7);
-					// function 3
-					instWord = instWord | (0x7 << 12);
-					// rs1
-					instWord = instWord | (rs1_dash << 15);
-					// rs2
-					instWord = instWord | (rs2_dash << 20);
-					// function 7
-					instWord = instWord | (0x00 << 25);
-
-					cout<<"\tC.AND\t"<<reg[rs1_dash].name<<","<< reg[rs2_dash].name << endl;
-				}
-			}	
-				break;	
-        
-        
         
 		switch (func3)
 		{
@@ -841,10 +742,7 @@ void Decompress(unsigned int instHalf)
 					// adding the base (opcode -- rd -- funct3 -- rs1 )
 					instWord = 0x00010113;
 					// extracting the immediate
-			}
-				break;
-
-					CI_imm = 0x0;
+						CI_imm = 0x0;
 					CI_imm |= ((instHalf << 3) & 0x020) |
 						((instHalf << 4) & 0x0180) |
 						((instHalf << 1) & 0x020) |
@@ -853,9 +751,7 @@ void Decompress(unsigned int instHalf)
 					// adding the immediate
 					instWord |= ((CI_imm << 20) & 0xFFF00000);
 					cout << "\tC.ADDI16SP\t" << hex << "0x" << int(CI_imm) << '\n';
-
-				}
-        
+			     }
 				// c.lui
 				else if(rd != 0)
 				{
@@ -876,7 +772,105 @@ void Decompress(unsigned int instHalf)
 				}
 			}
 				break;
+
+
 			case 4:
+			{
+				if(func6 == 0x23)
+				{
+					switch (func)
+						{
+							case 0:
+							{
+								// c.sub
+							
+									// opcode
+									instWord = 0x33;
+									// rd
+									instWord = instWord | (rs1_dash << 7);
+									// fucntion 3
+									instWord = instWord | (0x0 << 12);
+									// rs1
+									instWord = instWord | (rs1_dash << 15);
+									// rs2
+									instWord = instWord | (rs2_dash << 20);
+									// function 7
+									instWord = instWord | (0x20 << 25);
+
+									cout<<"\tC.SUB\t"<<reg[rs1_dash].name<<","<< reg[rs2_dash].name << endl;
+
+									
+							}
+								break;	
+
+							case 1:
+							{
+								// c.xor
+							
+									// opcode
+									instWord = 0x33;
+									// rd
+									instWord = instWord | (rs1_dash << 7);
+									// function 3
+									instWord = instWord | (0x4 << 12);
+									// rs1
+									instWord = instWord | (rs1_dash << 15);
+									// rs2
+									instWord = instWord | (rs2_dash << 20);
+									// function 7
+									instWord = instWord | (0x00 << 25);
+
+									cout<<"\tC.XOR\t"<<reg[rs1_dash].name<<","<< reg[rs2_dash].name << endl;
+								
+							}
+								break;
+
+							case 2:
+							{
+								// c.or
+								
+									// opcode
+									instWord = 0x33;
+									// rd
+									instWord = instWord | (rs1_dash << 7);
+									// function 3
+									instWord = instWord | (0x6 << 12);
+									// rs1
+									instWord = instWord | (rs1_dash << 15);
+									// rs2
+									instWord = instWord | (rs2_dash << 20);
+									// function 7
+									instWord = instWord | (0x00 << 25);
+
+									cout<<"\tC.OR\t"<<reg[rs1_dash].name<<","<< reg[rs2_dash].name << endl;
+								
+							}
+								break;
+
+							case 3:
+							{
+								// c.and
+								
+									// opcode
+									instWord = 0x33;
+									// rd
+									instWord = instWord | (rs1_dash << 7);
+									// function 3
+									instWord = instWord | (0x7 << 12);
+									// rs1
+									instWord = instWord | (rs1_dash << 15);
+									// rs2
+									instWord = instWord | (rs2_dash << 20);
+									// function 7
+									instWord = instWord | (0x00 << 25);
+
+									cout<<"\tC.AND\t"<<reg[rs1_dash].name<<","<< reg[rs2_dash].name << endl;
+								
+							}	
+								break;	
+								}
+				}
+			else 
 			{
 				if (func2 == 0) // c.srli
 				{
@@ -917,6 +911,8 @@ void Decompress(unsigned int instHalf)
 					instWord |= (B_imm << 20) & 0xFFF00000;
 					cout << "\tC.ANDI\t" << reg[rs1_dash].name << hex << ", 0x" << int(B_imm) << "\n";
 				}
+			}
+				
 			}
 				break;
         
@@ -1042,7 +1038,7 @@ void Decompress(unsigned int instHalf)
 				}
 			}
 				break;
-		}
+		
 			// c.swsp
 			case 6:
 			{
@@ -1063,6 +1059,7 @@ void Decompress(unsigned int instHalf)
 			}
 				break;
 	}
+}	
 	else cout << "\tUnsupported Compressed Function\n";
 
 	// after decompressing the instruction halfword we will call the other function to execute the instruction
@@ -1119,7 +1116,6 @@ int main(int argc, char *argv[])
 			{
 				instWord = instWord | (((unsigned char)memory[pc])<<16) |
 			              		      (((unsigned char)memory[pc+1])<<24);
-			              			  (((unsigned char)memory[pc+1])<<24);
 				pc += 2;
 
 				instDecExec(instWord, 0);
