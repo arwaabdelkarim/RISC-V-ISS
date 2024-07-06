@@ -62,6 +62,7 @@ void instDecExec(unsigned int instWord, bool compressed)
 	unsigned int I_imm = 0x0, S_imm = 0x0, B_imm = 0x0, U_imm = 0x0, J_imm = 0x0, temp;
 	unsigned int address;
 	unsigned int instPC;
+
     if (!compressed)
         instPC = pc - 4;
 
@@ -89,26 +90,21 @@ void instDecExec(unsigned int instWord, bool compressed)
 	B_imm |= ((instWord >> 31) ? 0xFFFFF800 : 0x0);
 	B_imm <<= 1; //multiplying by 2 
 
-
 	//Extraction of U immediate 
 	U_imm = ((instWord >> 12) & 0xFFFFF) | (((instWord >> 31) ? 0xFFF00000 : 0x0));
 	
-
-	// - inst[31] - inst[30:25] - inst[11:7]
-	//temp = (((instWord >> 7) & 0x0000001F) | ((instWord >> 25 & 0x0000003F) << 5));
-	//S_imm = temp | (((instWord >> 31) ? 0xFFFFF800 : 0x0));
-
 	//Extraction of S immediate 
 	S_imm = (((instWord >> 7) & 0x0000001F) |
-		((instWord >> 20 & 0x00000FE0))) |
-		((instWord >> 31) ? 0xFFFFF800 : 0x0);
+			((instWord >> 20 & 0x00000FE0))) |
+			((instWord >> 31) ? 0xFFFFF800 : 0x0);
 
 	//Extraction of J immediate
 	J_imm = ((instWord >> 31 & 0x1) << 20) |
-		((instWord >> 21 & 0x3FF) << 1) |
-		((instWord >> 20 & 0x1) << 11) |
-		((instWord >> 12 & 0xFF) << 12);
+			((instWord >> 21 & 0x3FF) << 1) |
+			((instWord >> 20 & 0x1) << 11) |
+			((instWord >> 12 & 0xFF) << 12);
 	J_imm |= (((instWord >> 31) ? 0xFFF00000 : 0x0));
+
 
 	// R Instructions
 	if (opcode == 0x33) 
@@ -565,7 +561,6 @@ void Decompress(unsigned int instHalf)
 	rs2_dash |= 0x08;
 	rs1_dash |= 0x08;
 
-
 	// CJ offset
 	CJ_imm = ((instHalf >> 2) & 0x1);
 	CJ_imm <<= 4; 
@@ -621,7 +616,7 @@ void Decompress(unsigned int instHalf)
 				instWord = 0x00010413;
 				// adding rd'
 				instWord |= ((instHalf << 5) & 0x0380);
-				// extract the immediate and make it start at position 0 !!
+				// extract the immediate and make it start at position 0 
 				// non-zero unsigned immediate scaled by 4
 				CI_imm = 0x0;
 				CI_imm |= ((instHalf >> 2) & 0x08) |
@@ -770,7 +765,6 @@ void Decompress(unsigned int instHalf)
 				}
 			}
 				break;
-
 
 			case 4:
 			{
