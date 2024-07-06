@@ -3,7 +3,6 @@
 #include "stdlib.h"
 #include <iomanip>
 #include <string>
-#include <bitset>
 using namespace std;
 
 struct registers
@@ -21,7 +20,7 @@ unsigned int pc = 0;
 // 64KB for instructions and 64KB for data
 unsigned char memory[(64+64)*1024]; 
 
-void printRegisterContents()
+void RegisterContents()
 {
 	for (int i = 0; i < 32; i++)
 	{
@@ -29,7 +28,7 @@ void printRegisterContents()
 	}
 }
 
-void emitError(char *s)
+void emitError(const char *s)
 { 
 	cout << s;
 	exit(0);
@@ -63,6 +62,7 @@ void instDecExec(unsigned int instWord, bool compressed)
 	unsigned int I_imm = 0x0, S_imm = 0x0, B_imm = 0x0, U_imm = 0x0, J_imm = 0x0, temp;
 	unsigned int address;
 	unsigned int instPC;
+
     if (!compressed)
         instPC = pc - 4;
 
@@ -90,26 +90,21 @@ void instDecExec(unsigned int instWord, bool compressed)
 	B_imm |= ((instWord >> 31) ? 0xFFFFF800 : 0x0);
 	B_imm <<= 1; //multiplying by 2 
 
-
 	//Extraction of U immediate 
 	U_imm = ((instWord >> 12) & 0xFFFFF) | (((instWord >> 31) ? 0xFFF00000 : 0x0));
 	
-
-	// - inst[31] - inst[30:25] - inst[11:7]
-	//temp = (((instWord >> 7) & 0x0000001F) | ((instWord >> 25 & 0x0000003F) << 5));
-	//S_imm = temp | (((instWord >> 31) ? 0xFFFFF800 : 0x0));
-
 	//Extraction of S immediate 
 	S_imm = (((instWord >> 7) & 0x0000001F) |
-		((instWord >> 20 & 0x00000FE0))) |
-		((instWord >> 31) ? 0xFFFFF800 : 0x0);
+			((instWord >> 20 & 0x00000FE0))) |
+			((instWord >> 31) ? 0xFFFFF800 : 0x0);
 
 	//Extraction of J immediate
 	J_imm = ((instWord >> 31 & 0x1) << 20) |
-		((instWord >> 21 & 0x3FF) << 1) |
-		((instWord >> 20 & 0x1) << 11) |
-		((instWord >> 12 & 0xFF) << 12);
+			((instWord >> 21 & 0x3FF) << 1) |
+			((instWord >> 20 & 0x1) << 11) |
+			((instWord >> 12 & 0xFF) << 12);
 	J_imm |= (((instWord >> 31) ? 0xFFF00000 : 0x0));
+
 
 	// R Instructions
 	if (opcode == 0x33) 
@@ -566,19 +561,18 @@ void Decompress(unsigned int instHalf)
 	rs2_dash |= 0x08;
 	rs1_dash |= 0x08;
 
-
 	// CJ offset
 	CJ_imm = ((instHalf >> 2) & 0x1);
 	CJ_imm <<= 4; 
-	CJ_imm = CJ_imm | ((instHalf >> 3) & 0x007);
-	CJ_imm = CJ_imm | (instHalf & 0x040);
-	CJ_imm = CJ_imm | ((instHalf >> 2) & 0x020);
-	CJ_imm = CJ_imm | (instHalf & 0x200);
-	CJ_imm = CJ_imm | ((instHalf >> 2) & 0x180);
-	CJ_imm = CJ_imm | ((instHalf >> 8) & 0x008);
-	CJ_imm = CJ_imm | ((instHalf >> 2) & 0x400);
-	CJ_imm = CJ_imm | ((instHalf >> 12 & 0x01) ? 0xFFFFF800 : 0X0);
-
+	CJ_imm |= ((instHalf >> 3) & 0x007);
+	CJ_imm |= (instHalf & 0x040);
+	CJ_imm |= ((instHalf >> 2) & 0x020);
+	CJ_imm |= (instHalf & 0x200);
+	CJ_imm |= ((instHalf >> 2) & 0x180);
+	CJ_imm |= ((instHalf >> 8) & 0x008);
+	CJ_imm |= ((instHalf >> 2) & 0x400);
+	CJ_imm |= ((instHalf >> 12 & 0x01) ? 0xFFFFF800 : 0X0);
+	// Rearranging immediate to J-Format 
 	CJ_imm_D = ((CJ_imm & 0x3FF) << 9);
 	CJ_imm_D |= (CJ_imm  >> 11) & 0x0FF; 
 	CJ_imm_D |= ((CJ_imm >> 2) & 0x100); 
@@ -591,7 +585,7 @@ void Decompress(unsigned int instHalf)
 	// Shift amount, shamt[5] is 0 for rv32C
 	shamt = ((instHalf >> 2) & (0x01F));
         
-  // CSS immediate
+  	// CSS immediate
 	CSS_imm = (instHalf >> 9) & 0x00F;
 	CSS_imm = CSS_imm | (((instHalf >> 7) & 0x0003) << 4);
 	CSS_imm = CSS_imm << 2;
@@ -622,7 +616,7 @@ void Decompress(unsigned int instHalf)
 				instWord = 0x00010413;
 				// adding rd'
 				instWord |= ((instHalf << 5) & 0x0380);
-				// extract the immediate and make it start at position 0 !!
+				// extract the immediate and make it start at position 0 
 				// non-zero unsigned immediate scaled by 4
 				CI_imm = 0x0;
 				CI_imm |= ((instHalf >> 2) & 0x08) |
@@ -772,145 +766,140 @@ void Decompress(unsigned int instHalf)
 			}
 				break;
 
-
 			case 4:
 			{
 				if(func6 == 0x23)
 				{
 					switch (func)
 				    {
-							case 0:
-							{
-								// c.sub
+						// c.sub
+						case 0:
+						{
+							// opcode
+							instWord = 0x33;
+							// rd
+							instWord = instWord | (rs1_dash << 7);
+							// fucntion 3
+							instWord = instWord | (0x0 << 12);
+							// rs1
+							instWord = instWord | (rs1_dash << 15);
+							// rs2
+							instWord = instWord | (rs2_dash << 20);
+							// function 7
+							instWord = instWord | (0x20 << 25);
+
+							cout<<"\tC.SUB\t"<<reg[rs1_dash].name<<","<< reg[rs2_dash].name << endl;			
+						}
+							break;	
+
+						// c.xor
+						case 1:
+						{
 							
-								// opcode
-								instWord = 0x33;
-								// rd
-								instWord = instWord | (rs1_dash << 7);
-								// fucntion 3
-									instWord = instWord | (0x0 << 12);
-									// rs1
-									instWord = instWord | (rs1_dash << 15);
-									// rs2
-									instWord = instWord | (rs2_dash << 20);
-									// function 7
-									instWord = instWord | (0x20 << 25);
+							// opcode
+							instWord = 0x33;
+							// rd
+							instWord = instWord | (rs1_dash << 7);
+							// function 3
+							instWord = instWord | (0x4 << 12);
+							// rs1
+							instWord = instWord | (rs1_dash << 15);
+							// rs2
+							instWord = instWord | (rs2_dash << 20);
+							// function 7
+							instWord = instWord | (0x00 << 25);
 
-									cout<<"\tC.SUB\t"<<reg[rs1_dash].name<<","<< reg[rs2_dash].name << endl;
-
-									
-							}
-								break;	
-
-							case 1:
-							{
-								// c.xor
-							
-									// opcode
-									instWord = 0x33;
-									// rd
-									instWord = instWord | (rs1_dash << 7);
-									// function 3
-									instWord = instWord | (0x4 << 12);
-									// rs1
-									instWord = instWord | (rs1_dash << 15);
-									// rs2
-									instWord = instWord | (rs2_dash << 20);
-									// function 7
-									instWord = instWord | (0x00 << 25);
-
-									cout<<"\tC.XOR\t"<<reg[rs1_dash].name<<","<< reg[rs2_dash].name << endl;
+							cout<<"\tC.XOR\t"<<reg[rs1_dash].name<<","<< reg[rs2_dash].name << endl;
 								
-							}
-								break;
+						}
+							break;
 
-							case 2:
-							{
-								// c.or
-								
-									// opcode
-									instWord = 0x33;
-									// rd
-									instWord = instWord | (rs1_dash << 7);
-									// function 3
-									instWord = instWord | (0x6 << 12);
-									// rs1
-									instWord = instWord | (rs1_dash << 15);
-									// rs2
-									instWord = instWord | (rs2_dash << 20);
-									// function 7
-									instWord = instWord | (0x00 << 25);
+						// c.or
+						case 2:
+						{								
+							// opcode
+							instWord = 0x33;
+							// rd
+							instWord = instWord | (rs1_dash << 7);
+							// function 3
+							instWord = instWord | (0x6 << 12);
+							// rs1
+							instWord = instWord | (rs1_dash << 15);
+							// rs2
+							instWord = instWord | (rs2_dash << 20);
+							// function 7
+							instWord = instWord | (0x00 << 25);
 
-									cout<<"\tC.OR\t"<<reg[rs1_dash].name<<","<< reg[rs2_dash].name << endl;
+							cout<<"\tC.OR\t"<<reg[rs1_dash].name<<","<< reg[rs2_dash].name << endl;
 								
-							}
-								break;
+						}
+							break;
 
-							case 3:
-							{
-								// c.and
+						// c.and
+						case 3:
+						{
 								
-								// opcode
-								instWord = 0x33;
-									// rd
-									instWord = instWord | (rs1_dash << 7);
-									// function 3
-									instWord = instWord | (0x7 << 12);
-									// rs1
-									instWord = instWord | (rs1_dash << 15);
-									// rs2
-									instWord = instWord | (rs2_dash << 20);
-									// function 7
-									instWord = instWord | (0x00 << 25);
+							// opcode
+							instWord = 0x33;
+							// rd
+							instWord = instWord | (rs1_dash << 7);
+							// function 3
+							instWord = instWord | (0x7 << 12);
+							// rs1
+							instWord = instWord | (rs1_dash << 15);
+							// rs2
+							instWord = instWord | (rs2_dash << 20);
+							// function 7
+							instWord = instWord | (0x00 << 25);
 
-									cout<<"\tC.AND\t"<<reg[rs1_dash].name<<","<< reg[rs2_dash].name << endl;
+							cout<<"\tC.AND\t"<<reg[rs1_dash].name<<","<< reg[rs2_dash].name << endl;
 								
-							}	
-								break;	
+						}	
+							break;	
 				    }
 			    }
-			else 
-			{
-				if (func2 == 0) // c.srli
+				else 
 				{
-					// setting the base (opcode -- fn3 -- fn2)
-					instWord = 0x00045413;
-					// adding rd'
-					instWord |= instHalf & 0x0380;
-					// adding rs1'
-					instWord |= ((instHalf << 8) & 0x038000);
-					// adding shamt
-					instWord |= ((shamt << 20) & 0x01F00000);
+					if (func2 == 0) // c.srli
+					{
+						// setting the base (opcode -- fn3 -- fn2)
+						instWord = 0x00045413;
+						// adding rd'
+						instWord |= instHalf & 0x0380;
+						// adding rs1'
+						instWord |= ((instHalf << 8) & 0x038000);
+						// adding shamt
+						instWord |= ((shamt << 20) & 0x01F00000);
 
-					cout << "\tC.SRLI\t" << reg[rs1_dash].name << hex << ", 0x" << int(shamt) << "\n";
+						cout << "\tC.SRLI\t" << reg[rs1_dash].name << hex << ", 0x" << int(shamt) << "\n";
+					}
+					else if (func2 == 1) //c.srai
+					{
+						// setting the base (opcode -- fn3 -- fn2)
+						instWord = 0x40045413;
+						// adding rd'
+						instWord |= instHalf & 0x0380;
+						// adding rs1'
+						instWord |= ((instHalf << 8) & 0x038000);
+						// adding shamt
+						instWord |= (shamt << 20) & 0x01F00000;
+						cout << "\tC.SRAI\t" << reg[rs1_dash].name << hex << ", 0x" << int(shamt) << "\n";
+					}
+					else // c.andi
+					{
+						// setting the base (opcode -- fn3 -- fn2)
+						instWord = 0x00087813;
+						// adding rd'
+						instWord |= instHalf & 0x380;
+						// adding rs1'
+						instWord |= ((instHalf << 8) & 0x038000);
+						// special immediate for andi
+						B_imm = shamt | (((instHalf >> 7) & 0x020) ? 0xFFFFFFE0 : 0x0);
+						// adding the immediate
+						instWord |= (B_imm << 20) & 0xFFF00000;
+						cout << "\tC.ANDI\t" << reg[rs1_dash].name << hex << ", 0x" << int(B_imm) << "\n";
+					}
 				}
-				else if (func2 == 1) //c.srai
-				{
-					// setting the base (opcode -- fn3 -- fn2)
-					instWord = 0x40045413;
-					// adding rd'
-					instWord |= instHalf & 0x0380;
-					// adding rs1'
-					instWord |= ((instHalf << 8) & 0x038000);
-					// adding shamt
-					instWord |= (shamt << 20) & 0x01F00000;
-					cout << "\tC.SRAI\t" << reg[rs1_dash].name << hex << ", 0x" << int(shamt) << "\n";
-				}
-				else // c.andi
-				{
-					// setting the base (opcode -- fn3 -- fn2)
-					instWord = 0x00087813;
-					// adding rd'
-					instWord |= instHalf & 0x380;
-					// adding rs1'
-					instWord |= ((instHalf << 8) & 0x038000);
-					// special immediate for andi
-					B_imm = shamt | (((instHalf >> 7) & 0x020) ? 0xFFFFFFE0 : 0x0);
-					// adding the immediate
-					instWord |= (B_imm << 20) & 0xFFF00000;
-					cout << "\tC.ANDI\t" << reg[rs1_dash].name << hex << ", 0x" << int(B_imm) << "\n";
-				}
-			}
 				
 		    }
 				break;
