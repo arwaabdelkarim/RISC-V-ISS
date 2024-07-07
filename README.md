@@ -38,7 +38,8 @@ The program works by taking in an RV32IC machine code file and executes its inst
  
 
 ## Challenges 
-
+- extracting the immediates from the instruction word for most of the types proved to be a difficult task. It took us a while to test the way we extracted the immediates as we had to do it on paper and then test it on the program using the test files we had and had to check if correct immediates were used in the program. this caused issues such as an infinite loop caused by extracting incorrect immediate for the jal instruction
+- 
 
 
 ## Test cases 
