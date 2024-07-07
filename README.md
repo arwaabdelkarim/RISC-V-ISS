@@ -1,18 +1,23 @@
 # RISC-V-ISS
 
+## Collaborators
+* [Yasmina Mahdy](https://github.com/Yasmina-Mahdy)
+* [Rana Taher](https://github.com/rana5679)
 
 ## Overview
 
 
-## How to build 
-
-
+## How to use 
+Building the program can be done on the command line using the following commands:
+- cd "The path of the cloned program on your device"
+- g++ rvsim.cpp -o rvsim.exe 
 
 ## How to use 
+After building the program to run the program use the following command line commands:
+-
 
 
 ## Program Design
-
 
 ## Challenges and Limitations
 
@@ -20,11 +25,6 @@
 ## Test cases 
 
 
-
-
-## Collaborators
-* [Yasmina Mahdy](https://github.com/Yasmina-Mahdy)
-* [Rana Taher](https://github.com/rana5679)
 
   
 ## License
