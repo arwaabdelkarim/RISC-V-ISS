@@ -38,7 +38,8 @@ The program works by taking in an RV32IC machine code file and executes its inst
  
 
 ## Challenges 
-- extracting the immediates from the instruction word for most of the types proved to be a difficult task. It took us a while to test the way we extracted the immediates as we had to do it on paper and then test it on the program using the test files we had and had to check if correct immediates were used in the program. This caused issues such as an infinite loop caused by extracting incorrect immediate for the jal instruction.
+- extracting the immediates from the uncompressed instructions for most of the types proved to be a difficult task. It took us a while to test the way we extracted the immediates as we had to do it on paper and then test it on the program using the test files we had and had to check if correct immediates were used in the program. This caused issues such as an infinite loop caused by extracting incorrect immediate for the jal instruction.
+- Extracting the immediate for the compressed instruction was even more difficult to do. The compressed CJ type's immediate is stored in the memory in a way that is hard to extract and arrange in the same order as the immediate in the instruction word of the uncompressed J type.
 - Debugging the code took us a great deal of time as we were unable to make use of the debugger in the IDE we used and worked mostly on the command line. Because of that we had to use excute test files for every instruction in the program. Then we had to compare each instruction produced by our program to the asm file of the binary file used to make sure that our program disassembled correctly.
 
 
