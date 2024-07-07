@@ -35,6 +35,7 @@ The program works by taking in an RV32IC machine code file and executes its inst
    - printing a string
    - exiting the program
 - The compressed functions were not thoroughly tested, as it was difficult to find a source to generate compressed instructions machine code from (however they passed the tests that were available).
+
  
 
 ## Challenges 
