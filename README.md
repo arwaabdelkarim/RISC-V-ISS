@@ -3,7 +3,7 @@
 ## Overview
 This project was created for the Computer Organization & Assembly Language course, taught at the American University in Cairo in the Summer 2024 semester, under the instruction of Dr. Mohamed Shalan.  
   
-This project implements a RISC-V ISA simulator and disassembler, challenging our understanding of how a CPU handles executing instructions and memory access, as well as the RISC-V ISA instructions and formats.
+This project implements a RISC-V ISA simulator and dissembler, challenging our understanding of how a CPU handles executing instructions and memory access, as well as the RISC-V ISA instructions and formats.
 
 
 ## How to build 
@@ -20,7 +20,7 @@ That can be done using the following commands:
 
 
 ## Program Design
-This program is an ISS (ISA simulator) and disassembler for the RISC-V ISA, in particular **RV32IC** Base Integer Instruction Set with support for instruction compression.  
+This program is an ISS (ISA simulator) and dissembler for the RISC-V ISA, in particular **RV32IC** Base Integer Instruction Set with support for instruction compression.  
 The program works by taking in an RV32IC machine code file and executes its instructions through the following steps:  
 - Reading the machine code file and writing it to the text section of the memory, and if a data file exits it is also read into the data section.
 - Going through the instructions one by one by a program counter, detecting whether they are compressed (16-bits) or not (32-bits).
