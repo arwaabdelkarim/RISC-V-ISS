@@ -9,15 +9,15 @@
 
 ## How to build 
 Building the program can be done on the command line using the following commands:
-- cd "The path of the cloned program on your device"
+- cd <The path of the cloned program on your device>
 - g++ rvsim.cpp -o rvsim.exe 
 
 ## How to use 
 After building the program to be able to run the program you need to provide the binary file for the text section of the program you wish to disassemble 
 and if your program has a data section , provide the binary file for it as well. 
 That can be done using the foolowing command:
-- for windows use = .\rvsim.exe "path of the binary for the text section"  "path of the binary file for the data section"
-- for IOS use = ./rvsim.exe "path of the binary for the text section"  "path of the binary file for the data section"
+- for windows use = .\rvsim.exe <path of the binary for the text section>  <path of the binary file for the data section>
+- for IOS use = ./rvsim.exe <path of the binary for the text section>  <path of the binary file for the data section>
 
 
 ## Program Design
