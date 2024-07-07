@@ -45,7 +45,7 @@ The program works by taking in an RV32IC machine code file and executes its inst
 
 
 ## Test cases 
-Test case 1 instructions:
+Test case 1 instructions :
 - auipc
 - addi
 - jal
@@ -57,7 +57,7 @@ Test case 1 instructions:
 - add
 - jalr
   
-Test case 2 instructions:
+Test case 2 instructions :
 - auipc
 - addi
 - jal
@@ -66,7 +66,7 @@ Test case 2 instructions:
 - sw
 - lw
 
-Test case 3 instructions:
+Test case 3 instructions :
 - li
 - addi
 - add
@@ -78,7 +78,7 @@ Test case 3 instructions:
 - lhu
 - ecall
 
-Test case 4 instructions:
+Test case 4 instructions :
 - addi
 - add
 - or
@@ -90,7 +90,7 @@ Test case 4 instructions:
 - sll
 - jal
 
-Test case 5 instructions:
+Test case 5 instructions :
 - addi
 - slt
 - li
@@ -100,7 +100,7 @@ Test case 5 instructions:
 - xor
 - sltu
 
-Test case 6 instructions:
+Test case 6 instructions :
 - addi
 - xori
 - beq
@@ -111,7 +111,7 @@ Test case 6 instructions:
 - ecall
 - jal
 
-Test case 7 instructions:
+Test case 7 instructions :
 - addi
 - bltu
 - srli
