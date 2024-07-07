@@ -22,7 +22,15 @@ That can be done using the foolowing command:
 
 ## Program Design
 
-## Challenges and Limitations
+## Limitations in the program
+- The ECALL instruction only supports the following commands:
+   - printing an integer
+   - printing a string
+   - exiting the program
+ 
+
+## Challenges 
+
 
 
 ## Test cases 
