@@ -541,6 +541,7 @@ void instDecExec(unsigned int instWord, bool compressed)
 
 		if (!compressed)cout << "\tUnkown Instruction \n";
 	}
+	RegisterContents();
 }
 
 void Decompress(unsigned int instHalf)
@@ -745,12 +746,12 @@ void Decompress(unsigned int instHalf)
 					// adding the base (opcode -- rd -- funct3 -- rs1 )
 					instWord = 0x00010113;
 					// extracting the immediate
-						CI_imm = 0x0;
+					CI_imm = 0x0;
 					CI_imm |= ((instHalf << 3) & 0x020) |
-						((instHalf << 4) & 0x0180) |
-						((instHalf << 1) & 0x020) |
-						((instHalf >> 2) & 0x010) |
-						((instHalf & 0x01000) ? 0xFFFFFE00 : 0x0);
+							((instHalf << 4) & 0x0180) |
+							((instHalf << 1) & 0x040) |
+							((instHalf >> 2) & 0x010) |
+							((instHalf & 0x01000) ? 0xFFFFFE00 : 0x0);
 					// adding the immediate
 					instWord |= ((CI_imm << 20) & 0xFFF00000);
 					cout << "\tC.ADDI16SP " << hex << "0x" << int(CI_imm) << '\n';
@@ -1124,5 +1125,6 @@ int main(int argc, char *argv[])
 		}
 
 	} else emitError("Cannot access input file\n");
+	cout << ("Program Terminated Successfulyy\n");
 }
 
