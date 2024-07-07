@@ -541,7 +541,6 @@ void instDecExec(unsigned int instWord, bool compressed)
 
 		if (!compressed)cout << "\tUnkown Instruction \n";
 	}
-	RegisterContents();
 }
 
 void Decompress(unsigned int instHalf)
