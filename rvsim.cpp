@@ -46,6 +46,7 @@ int mem_to_reg(int ad, int i) {
 	int x = 0; // will hold our int
 
 	while (i > 0) {
+		if (ad + i >= 131072) emitError("Attempting to access location beyond memory size\n");
 		x |= memory[ad + i]; // captures the i-th byte by 'or'ing
 		x <<= 8; // shift to allow place for next byte
 		i--;
@@ -307,6 +308,7 @@ void instDecExec(unsigned int instWord, bool compressed)
 				if (!compressed)
 					cout << "\tLB\t" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
 				if (rd == 0) return; // to keep reg zero unchanged
+				if (ad >= 131072) emitError("Attempting to access location beyond memory size\n");
 				temp = memory[ad];
 				// sign extending
 				reg[rd].value = memory[ad] | ((temp >> 7) ? 0xFFFFFF00 : 0x0); 
@@ -339,6 +341,7 @@ void instDecExec(unsigned int instWord, bool compressed)
 					cout << "\tLBU\t" << reg[rd].name << ", " << dec << (int)I_imm << "(" << reg[rs1].name << ")\n";
 				if (rd == 0) return; // to keep reg zero unchanged
 				// automatically zero extended because memory is unsigned char
+				if (ad >= 131072) emitError("Attempting to access location beyond memory size\n");
 				reg[rd].value = memory[ad];
 			}
 				break;
@@ -370,6 +373,7 @@ void instDecExec(unsigned int instWord, bool compressed)
 				if (!compressed)
 					cout << "\tSB\t" << reg[rs2].name << ", " << dec << (int)S_imm << "(" << reg[rs1].name << ")\n";
 				// the memory address gets the LS byte in reg[rs2]
+				if (ad >= 131072) emitError("Attempting to access location beyond memory size\n");
 				memory[ad] = reg[rs2].value; 
 			}
 				break;
@@ -378,6 +382,7 @@ void instDecExec(unsigned int instWord, bool compressed)
 			{
 				if (!compressed)
 					cout << "\tSH\t" << reg[rs2].name << ", " << dec << (int)S_imm << "(" << reg[rs1].name << ")\n";
+				if (ad + 1 >= 131072) emitError("Attempting to access location beyond memory size\n");
 				memory[ad] = reg[rs2].value;
 				memory[ad + 1] = reg[rs2].value >> 8;
 			}
@@ -387,6 +392,7 @@ void instDecExec(unsigned int instWord, bool compressed)
 			{
 				if (!compressed)
 					cout << "\tSW\t" << reg[rs2].name << ", " << dec << (int)S_imm << "(" << reg[rs1].name << ")\n";
+				if (ad + 3 >= 131072) emitError("Attempting to access location beyond memory size\n");
 				memory[ad] = reg[rs2].value;
 				memory[ad + 1] = reg[rs2].value >> 8;
 				memory[ad + 2] = reg[rs2].value >> 16;
@@ -507,6 +513,7 @@ void instDecExec(unsigned int instWord, bool compressed)
 		else if (reg[17].value == 4)
 		{
 			int ad = reg[10].value;
+			if (ad >= 131072) emitError("Attempting to access location beyond memory size\n");
 			char c = memory[ad]; // c = char at the address stored in a0
 			string output = "";
 
@@ -1066,7 +1073,7 @@ int main(int argc, char *argv[])
 	// char *a = new char; for debugging purposes
 
 	if(argc<2) 
-		emitError("use: .\rvsim.exe <machine_code_file_name>\n");
+		emitError("use: .\\rvsim.exe <machine_code_file_name>\n");
 
 	inFile.open(argv[1], ios::in | ios::binary | ios::ate);
 
@@ -1094,6 +1101,7 @@ int main(int argc, char *argv[])
 		
 		while(true)
 		{
+			if (pc + 1 >= 131072) emitError("Attempting to access location beyond memory size\n");
 			instWord = 	(unsigned char)memory[pc] |
 						(((unsigned char)memory[pc+1])<<8);
 						
@@ -1102,6 +1110,7 @@ int main(int argc, char *argv[])
                 break;
 		    else if((instWord & 0x0003) == 0x3) // if decompressed
 			{
+				if (pc + 1 >= 131072) emitError("Attempting to access location beyond memory size\n");
 				instWord = instWord | (((unsigned char)memory[pc])<<16) |
 			              		      (((unsigned char)memory[pc+1])<<24);
 				pc += 2;
