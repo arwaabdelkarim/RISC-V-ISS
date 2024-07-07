@@ -7,7 +7,7 @@
 ## Overview
 
 
-## How to use 
+## How to build 
 Building the program can be done on the command line using the following commands:
 - cd "The path of the cloned program on your device"
 - g++ rvsim.cpp -o rvsim.exe 
