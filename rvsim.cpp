@@ -3,6 +3,7 @@
 #include "stdlib.h"
 #include <iomanip>
 #include <string>
+#include <bitset>
 using namespace std;
 
 struct registers
@@ -42,7 +43,8 @@ void printPrefix(unsigned int instA, unsigned int instW)
 
 
 // this is a function to load i+1 bytes to a reg, i is offset to reach most significant byte (little endian)
-int mem_to_reg(int ad, int i) { 
+int mem_to_reg(int ad, int i) 
+{ 
 	int x = 0; // will hold our int
 
 	while (i > 0) {
@@ -564,12 +566,12 @@ void Decompress(unsigned int instHalf)
 	// CJ offset
 	CJ_imm = ((instHalf >> 2) & 0x1);
 	CJ_imm <<= 4; 
-	CJ_imm |= ((instHalf >> 3) & 0x007);
-	CJ_imm |= (instHalf & 0x040);
-	CJ_imm |= ((instHalf >> 2) & 0x020);
-	CJ_imm |= (instHalf & 0x200);
-	CJ_imm |= ((instHalf >> 2) & 0x180);
-	CJ_imm |= ((instHalf >> 8) & 0x008);
+	CJ_imm |= ((instHalf >> 3) & 0x007);  
+	CJ_imm |= (instHalf & 0x040);  // 7th bit
+	CJ_imm |= ((instHalf >> 2) & 0x020); // 6th bit
+	CJ_imm |= ((instHalf >> 1) & 0x200); // 10th bit
+	CJ_imm |= ((instHalf >> 2) & 0x180); // 8th & 9th bits
+	CJ_imm |= ((instHalf >> 8) & 0x008); // 4th
 	CJ_imm |= ((instHalf >> 2) & 0x400);
 	CJ_imm |= ((instHalf >> 12 & 0x01) ? 0xFFFFF800 : 0X0);
 	// Rearranging immediate to J-Format 
@@ -705,7 +707,7 @@ void Decompress(unsigned int instHalf)
 				break;
 			// c.jal
 			case 1:
-			{
+			{	
 				CJ_imm <<= 1;
 				cout << "\tC.JAL\t" << "0x" << hex << instPC + (int)CJ_imm << "\n";
 				//set immediate
