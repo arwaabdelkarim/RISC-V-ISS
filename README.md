@@ -8,7 +8,7 @@ This project implements a RISC-V ISA simulator and disassembler, challenging our
 
 ## How to build 
 Building the program can be done on the command line using the following commands:
-- `cd <cloned program directory>`
+- `cd <cloned_program_directory>`
 - `g++ rvsim.cpp -o rvsim.exe`
 
 ## How to use 
