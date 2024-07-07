@@ -3,7 +3,6 @@
 #include "stdlib.h"
 #include <iomanip>
 #include <string>
-#include <bitset>
 using namespace std;
 
 struct registers
