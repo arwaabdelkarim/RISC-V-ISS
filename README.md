@@ -45,6 +45,77 @@ The program works by taking in an RV32IC machine code file and executes its inst
 
 
 ## Test cases 
+Test case 1 instructions:
+- auipc
+- addi
+- jal
+- li
+- ecall
+- bgt
+- sw
+- lw
+- add
+- jalr
+  
+Test case 2 instructions:
+- auipc
+- addi
+- jal
+- bne
+- jalr
+- sw
+- lw
+
+Test case 3 instructions:
+- li
+- addi
+- add
+- sb
+- sh
+- lb
+- lh
+- lbu
+- lhu
+- ecall
+
+Test case 4 instructions:
+- addi
+- add
+- or
+- beq
+- andi
+- ori
+- srl
+- bne
+- sll
+- jal
+
+Test case 5 instructions:
+- addi
+- slt
+- li
+- sra
+- slti
+- ecall
+- xor
+- sltu
+
+Test case 6 instructions:
+- addi
+- xori
+- beq
+- slli
+- xori
+- sltiu
+- li
+- ecall
+- jal
+
+Test case 7 instructions:
+- addi
+- bltu
+- srli
+- jal
 
 
 ## Collaborators
